@@ -1,22 +1,21 @@
 #include "mydiff.h"
-#include <stdlib.h>
-#include <stdio.h>
-
-char *prog_name;
 
 static void usage(void) {
-    fpinrtf(stderr, "SYNOPSIS:\n\tmydiff [-i] file1 file2\n");
+    // argv[0] also contains path to file -> easier to use static string
+    fprintf(stderr, "SYNOPSIS:\n\tmydiff [-i] file1 file2\n");
+    exit(EXIT_FAILURE);
+}
+
+static void fopen_error(char *filename) {
+    fprintf(stderr, "Error opening file '%s': %s\n", filename, strerror(errno));
     exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[]) {
-    prog_name = argv[0];
     bool ignore_case = false;
-
-    char *file_1;
-    char *file_2;
-
-    DIFF* result;
+    char *filename1, *filename2;
+    FILE *file1, *file2;
+    int c;
 
     /*
      * 3rd param: optstring defines legitimate option characters.
@@ -30,7 +29,7 @@ int main(int argc, char *argv[]) {
                 ignore_case = true;
                 break;
             case '?':
-                fpinrtf(stderr, "Invalid option.\n");
+                fprintf(stderr, "Invalid option.\n");
                 usage();
                 break;
             default:
@@ -40,20 +39,21 @@ int main(int argc, char *argv[]) {
 
     // Check whether there are two positional arguments or not
     if ((argc - optind) == 2) {
-        file_1 = argv[optind];
-        file_2 = argv[optind + 1];
+        filename1 = argv[optind];
+        filename2 = argv[optind + 1];
     } else {
         usage();
     }
 
-    result = difference(file_1, file_2, &ignore_case);
+    file1 = fopen(filename1, "r");
+    if (file1 == NULL) fopen_error(filename1);
+    file2 = fopen(filename2, "r");
+    if (file2 == NULL) fopen_error(filename2);
 
-    if (result->has_error) {
-        fprintf(stderr, result->error_message);
-        return EXIT_FAILURE;
-    }
+    difference(file1, file2, ignore_case);
 
-    printf("Line: %u, Character: %u", result->line, result->character);
+    fclose(file1);
+    fclose(file2);
 
     return EXIT_SUCCESS;
 }

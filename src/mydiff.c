@@ -33,5 +33,5 @@ void difference(FILE *file1, FILE *file2, bool ignore_case) {
         line_nr++;
     }
 
-    if (!found_diff) printf("File contents are identical");
+    if (!found_diff) printf("No character mismatch found");
 }

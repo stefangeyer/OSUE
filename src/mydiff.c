@@ -1,7 +1,7 @@
 #include "mydiff.h"
 #include <ctype.h>
 
-static int get_line(FILE *fp, char *line) {
+static int get_line(FILE *fp, char line[]) {
     if (fgets(line, LINE_MAX, fp) == NULL) return 0;
     else return strlen(line);
 }

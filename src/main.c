@@ -15,6 +15,7 @@
 // Using the C99 standard on windows seems to prevent the POSIX macros from being defined (warnings) -> Include manually
 #include <getopt.h>
 #include <assert.h>
+#include <errno.h>
 
 static char *pgm_name; /**< The program name.*/
 

@@ -79,11 +79,11 @@ int main(int argc, char *argv[]) {
 
     // Check whether there are two positional arguments or not
     if ((argc - optind) == 2 && !has_invalid_option) {
-        filename1 = argv[optind];
-        filename2 = argv[optind + 1];
-    } else {
         usage();
     }
+
+    filename1 = argv[optind];
+    filename2 = argv[optind + 1];
 
     if (strcmp(filename1, filename2) == 0) {
         // No need to compare a file with itself

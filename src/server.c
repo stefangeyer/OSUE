@@ -56,8 +56,15 @@ static int connfd = -1;                 // connection file descriptor
  *  - a function which checks whether a client's shot hit any of your ships
  */
 
-int main(int argc, char *argv[])
-{
+void usage(void) {
+    printf("Server:\n"
+                   "\tSYNOPSIS\n"
+                   "\t\tserver [-p PORT] SHIP1...\n"
+                   "\tEXAMPLE\n"
+                   "\t\tserver -p 1280 C2E2 F0H0 B6A6 E8E6 I2I5 H8I8\n");
+}
+
+int main(int argc, char *argv[]) {
     /* TODO
      * Add code to parse the command line arguments, maybe as a separate
      * function.
@@ -70,14 +77,14 @@ int main(int argc, char *argv[])
     hints.ai_flags = AI_PASSIVE;
 
     int res = getaddrinfo(NULL, port, &hints, &ai);
-    /* TODO
-     * check for errors
-     */
+    if (res != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(res));
+    }
 
     sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-    /* TODO
-     * check for errors
-     */
+    if (sockfd < 0) {
+        // error
+    }
 
     int val = 1;
     res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof val);

@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Check whether there are two positional arguments or not
-    if ((argc - optind) == 2 && !has_invalid_option) {
+    if ((argc - optind) != 2 || has_invalid_option) {
         usage();
     }
 

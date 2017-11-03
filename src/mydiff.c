@@ -23,7 +23,8 @@
  */
 static int get_line(FILE *fp, char line[]) {
     if (fgets(line, LINE_MAX, fp) == NULL) return 0;
-    else return strlen(line);
+    else return (int) strlen(line);
+    // Cast size_t (unsigned) to int for convenient data types (Due to CLion warning)
 }
 
 /**
@@ -50,8 +51,8 @@ void difference(FILE *file1, FILE *file2, bool ignore_case) {
         for (int i = 0; i < min(len1, len2); i++) {
             char c1 = ignore_case ? (char) tolower(line1[i]) : line1[i];
             char c2 = ignore_case ? (char) tolower(line2[i]) : line2[i];
-            // Only compare until either line reaches it's end
-            if (c1 == '\n' || c2 == '\n') break;
+            // Only compare until either line reaches it's end (windows friendly)
+            if (c1 == '\n' || c2 == '\n' || c1 == '\r' || c2 == '\r') break;
             if (c1 != c2) diff_amt++;
         }
 

@@ -72,4 +72,12 @@ static inline void print_map(uint8_t map[MAP_SIZE][MAP_SIZE])
     }
 }
 
+int max(int a, int b) {
+    return a > b ? a : b;
+}
+
+int min(int a, int b) {
+    return a < b ? a : b;
+}
+
 #endif // COMMON_H

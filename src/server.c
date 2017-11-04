@@ -64,19 +64,14 @@ typedef struct coord {
 typedef struct ship {
     int size;
     coord_t *coords;
+    bool *hits;
     struct ship *next;
 } ship_t;
 
 static char *pgm_name; /**< The program name */
 static ship_t *head; /**< The head element of the ship list. (Linked list structure) */
 
-int max(int a, int b) {
-    return a > b ? a : b;
-}
 
-int min(int a, int b) {
-    return a < b ? a : b;
-}
 
 /**
  * Mandatory usage function.
@@ -96,9 +91,9 @@ void usage(void) {
  * @details global variables: pgm_name
  * @param message The message that shall be printed before exiting
  */
-void error_exit(char *message, bool showUsage) {
+void error_exit(char *message, bool show_usage) {
     fprintf(stderr, "%s: An error has occurred: %s\n", pgm_name, message);
-    if (showUsage) usage();
+    if (show_usage) usage();
     else exit(EXIT_FAILURE);
 }
 
@@ -130,21 +125,18 @@ ship_t *create_ship(coord_t *bow, coord_t *stern) {
         return NULL;
     }
 
-    coord_t coords[size];
-
-    for (int i = low; i <= high; i++) {
-        coord_t c1 = {bow->x, i};
-        coord_t c2 = {i, bow->y};
-        coords[i - low] = vertical ? c1 : c2;
-    }
-
-    // TODO possibly allocate memory for the coord array
-    ship = malloc(sizeof(ship_t));
+    ship = malloc(sizeof(ship_t) + sizeof(coord_t) * size + sizeof(bool) * size);
     // check for errors
     if (ship == NULL) error_exit("Could not allocate memory.", false);
 
     ship->size = size;
-    ship->coords = coords;
+
+    for (int i = low; i <= high; i++) {
+        coord_t c1 = {bow->x, i};
+        coord_t c2 = {i, bow->y};
+        ship->coords[i - low] = vertical ? c1 : c2;
+        ship->hits[i - low] = false;
+    }
 
     return ship;
 }
@@ -158,6 +150,39 @@ void add_ship(ship_t *child) {
         curr->next = child;
     }
 
+}
+
+static bool destroyed(ship_t *ship) {
+    for (int i = 0; i < ship->size; i++)
+        if (!ship->hits[i]) return false;
+    return true;
+}
+
+static bool all_destroyed() {
+    ship_t *curr = head;
+    while (curr != NULL) {
+        if (!destroyed(curr)) return false;
+        curr = curr->next;
+    }
+    return true;
+}
+
+int shoot(coord_t *coord) {
+    ship_t *curr = head;
+    while (curr != NULL) {
+        for (int i = 0; i < curr->size; i++) {
+            if (curr->coords[i].x == coord->x && curr->coords[i].y == coord->y) {
+                curr->hits[i] = true;
+                // 1 = hit, but not destroyed;
+                // 2 = hit and destroyed, but there are other ships
+                // 3 = hit and destroyed and this was the last ship --> client wins
+                return destroyed(curr) ? (all_destroyed() ? 3 : 2) : 1;
+            }
+        }
+        curr = curr->next;
+    }
+    // 0 = no hit
+    return 0;
 }
 
 void parse_arguments(int argc, char **argv) {
@@ -184,7 +209,7 @@ void parse_arguments(int argc, char **argv) {
         }
     }
 
-    if (opt_p >= 1) error_exit("Port option can be set only once.", true);
+    if (opt_p > 1) error_exit("Port option can be set only once.", true);
 
     // Check whether there are the correct amount of positional arguments
     // or an in valid option were supplied. (6 Ships)
@@ -206,9 +231,8 @@ void parse_arguments(int argc, char **argv) {
 void clean_up(void) {
     ship_t *curr;
     while ((curr = head) != NULL) {
-        // advance head to next element.
         head = head->next;
-        // delete saved pointer.
+        // Free allocated memory
         free(curr);
     }
 
@@ -251,13 +275,13 @@ int main(int argc, char *argv[]) {
      */
 
     //while (...) {
-        /* TODO
-         * add code to:
-         *  - wait for a request from the client
-         *  - check for a parity error or invalid coordinates in the request
-         *  - check whether a ship was hit and determine the status to return
-         *  - send an according response to the client
-         */
+    /* TODO
+     * add code to:
+     *  - wait for a request from the client
+     *  - check for a parity error or invalid coordinates in the request
+     *  - check whether a ship was hit and determine the status to return
+     *  - send an according response to the client
+     */
     //}
 
     /* TODO

@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 
     if (strcmp(filename1, filename2) == 0) {
         // No need to compare a file with itself
-        fprintf(stderr, "Trying to compare a file with itself. Abort.");
+        fprintf(stderr, "Trying to compare a file with itself. Abort.\n");
         return EXIT_FAILURE;
     }
 

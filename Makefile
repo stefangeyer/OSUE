@@ -12,7 +12,7 @@ SOURCES = $(wildcard $(SOURCEDIR)/*.c)
 # $(patsubst pattern,replacement,text)
 OBJECTS = $(patsubst $(SOURCEDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES))
 
-EXECUTABLE = mydiff
+EXECUTABLE = server
 
 .PHONY: all clean docs
 all: $(BUILDDIR) $(BUILDDIR)/$(EXECUTABLE)

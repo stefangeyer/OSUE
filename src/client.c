@@ -1,3 +1,14 @@
+/**
+ * @file client.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 05.11.2017
+ *
+ * @brief Client program module.
+ *
+ * The client tries to connect to the server and attempts to win the battleship game.
+ * This implementation uses a dumb algorithm.
+ **/
+
 // IO, C standard library, POSIX API, data types:
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,13 +35,13 @@
 // stuff shared by client and server:
 #include "common.h"
 
-static char *pgm_name;
+static char *pgm_name; /**< The program name.*/
 
-static const char *host = DEFAULT_HOST; // the host to connect to
-static const char *port = DEFAULT_PORT; // the port to connect to
+static const char *host = DEFAULT_HOST; /**< the host to connect to */
+static const char *port = DEFAULT_PORT; /**< the port to connect to */
 
-static struct addrinfo *ai = NULL;      // addrinfo struct
-static int sockfd = -1;                 // socket file descriptor
+static struct addrinfo *ai = NULL;      /**< addrinfo struct */
+static int sockfd = -1;                 /**< socket file descriptor */
 
 /**
  * Mandatory usage function.
@@ -42,6 +53,11 @@ static void usage(void) {
     exit(EXIT_FAILURE);
 }
 
+/**
+ * Cleans up before the program exits
+ * @brief Coses socket connections and frees the addrinfo
+ * @details Frees sockfd and ai
+ */
 static void clean_up(void) {
     close(sockfd);
     freeaddrinfo(ai);
@@ -53,6 +69,7 @@ static void clean_up(void) {
  * @brief This function prints an error message to stderr and exits with EXIT_FAILURE.
  * @details global variables: pgm_name
  * @param message The message that shall be printed before exiting
+ * @param show_usage Display usage before exiting
  */
 static void error_exit(char *message, bool show_usage) {
     fprintf(stderr, "[%s] ERROR: %s\n", pgm_name, message);
@@ -61,6 +78,14 @@ static void error_exit(char *message, bool show_usage) {
     else exit(EXIT_FAILURE);
 }
 
+/**
+ * Takes argc and argv from the main function and sets required properties
+ *
+ * @brief Parses options and makes sure there are no positional arguments
+ * @details Parses host and port; both can occur once at max.
+ * @param argc arg count
+ * @param argv arg vector
+ */
 static void parse_arguments(int argc, char *argv[]) {
     pgm_name = argv[0];
 
@@ -98,6 +123,12 @@ static void parse_arguments(int argc, char *argv[]) {
     if ((argc - optind) > 0 || has_invalid_option) usage();
 }
 
+/**
+ * Sends static coords to the server over and over again
+ *
+ * @brief Takes and x and y coord and calculates a parity bit before sending
+ * @details Coords: x = 2, y = 3
+ */
 static void dumb_send(void) {
     // Cite Handout: "A dumb strategy (e.g. repeatedly shooting at the same square) is sufficient"
     // Dumb strategy: Always hit the same field: x = 2, y = 3
@@ -111,6 +142,15 @@ static void dumb_send(void) {
     if (numbuf < 0) error_exit(strerror(errno), false);
 }
 
+/**
+ * Program entry point.
+ * @brief This function takes care about parameters, creates and connects the socket and sends and receives
+ * @details The main function performs argument parsing using the getopt function. Duplicate options without arguments
+ * are not allowed. This implementation does not remember fields that were hit.
+ * @param argc The argument counter.
+ * @param argv The argument vector.
+ * @return Returns EXIT_SUCCESS on success, 2 on parity error, 3 on invalid coordinates and 1 otherwise
+ */
 int main(int argc, char *argv[]) {
     parse_arguments(argc, argv);
 

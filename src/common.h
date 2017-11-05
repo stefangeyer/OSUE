@@ -71,14 +71,38 @@ static inline void print_map(uint8_t map[MAP_SIZE][MAP_SIZE]) {
     }
 }
 
+/**
+ * Returns the minimum of two ints
+ *
+ * @brief compares two numbers and returns the lesser one.
+ * @param a first number
+ * @param b second number
+ * @return the smaller number
+ */
 int max(int a, int b) {
     return a > b ? a : b;
 }
 
+/**
+ * Returns the maximum of two ints
+ *
+ * @brief compares two numbers and returns the greater one.
+ * @param a first number
+ * @param b second number
+ * @return the bigger number
+ */
 int min(int a, int b) {
     return a < b ? a : b;
 }
 
+/**
+ * XORs a certain amount of bits from the given number and generates a parity bit for even parity.
+ *
+ * @brief Performs a XOR of the first 'limit' bits and returns the result.
+ * @param x the number
+ * @param limit the amount of bits
+ * @return the parity bit (0 or 1)
+ */
 int calculate_parity(int x, int limit) {
     int parity = 0;
 

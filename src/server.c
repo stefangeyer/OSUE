@@ -1,10 +1,13 @@
 /**
  * @file server.c
- * @author OSUE Team <osue-team@cps.tuwien.ac.at>
- * @date 2017-10-06
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 05.11.2017
  *
- * @brief Server for OSUE exercise 1B `Battleship'.
- */
+ * @brief Server program module.
+ *
+ * The server creates the ships and waits for clients to connect.
+ * When the server receives a message, it will reply respectively.
+ **/
 
 // IO, C standard library, POSIX API, data types:
 #include <stdio.h>
@@ -65,6 +68,11 @@ static void usage(void) {
     exit(EXIT_FAILURE);
 }
 
+/**
+ * Cleans up before the program exits
+ * @brief Coses socket connections and frees the addrinfo and allocated memory
+ * @details Frees sockfd, ai and ship structs
+ */
 static void clean_up(void) {
     ship_t *curr;
     while ((curr = head) != NULL) {
@@ -95,7 +103,12 @@ static void error_exit(char *message, bool show_usage) {
 }
 
 /**
+ * Creates a ship with the given parameters
  *
+ * @brief Based on the bow and stern, the other squares are calculated
+ * @details If the ship is neither vertical nor horizontal, NULL is returned
+ * Allocates memory for the ship using malloc. The ships act like a linked list data structure
+ * and keep reference of the next sibling.
  * @param bow Bow's coordinates (Bug)
  * @param stern Stern's coordinates (Heck)
  * @return The ship if valid coordinates were provided, NULL otherwise (e.g. for diagonal ships)
@@ -144,6 +157,14 @@ static ship_t *create_ship(coord_t *bow, coord_t *stern) {
     return ship;
 }
 
+/**
+ * Adds a ship to the linked list structure
+ *
+ * @brief Takes the parameter and appends it to the last element in the list.
+ * If the head is NULL, the param will be the new head.
+ * @details gobal varables: head
+ * @param child The new element
+ */
 static void add_ship(ship_t *child) {
     if (head == NULL) {
         head = child;
@@ -152,15 +173,26 @@ static void add_ship(ship_t *child) {
         while (curr->next != NULL) curr = curr->next;
         curr->next = child;
     }
-
 }
 
+/**
+ * Checks whether the given ship is fully destroyed or not.
+ *
+ * @brief Checks the hits array on every index.
+ * @param ship The ship to check
+ * @return true if destroyed, false otherwise.
+ */
 static bool destroyed(ship_t *ship) {
     for (int i = 0; i < ship->size; i++)
         if (!ship->hits[i]) return false;
     return true;
 }
 
+/**
+ * Checks whether all ships in the list are destroyed
+ * @brief Iterates through the list to check. Also returns true, when the list is empty
+ * @return true if all are destroyed, false otherwise.
+ */
 static bool all_destroyed(void) {
     ship_t *curr = head;
     while (curr != NULL) {
@@ -171,8 +203,11 @@ static bool all_destroyed(void) {
 }
 
 /**
+ * Checks if there is a ship at the given coord.
  *
- * @param coord
+ * @brief Checks if any element in the list contains the given coord.
+ * @details Returns the respective status code.
+ * @param coord The coord to check
  * @return 0 = no hit
  *         1 = hit, but not destroyed
  *         2 = hit and destroyed, but there are other ships left
@@ -196,6 +231,14 @@ static int shoot(coord_t *coord) {
     return result;
 }
 
+/**
+ * Takes argc and argv from the main function and sets required properties
+ *
+ * @brief Parses options and makes sure there are exactly 6 ships.
+ * @details Parses port; can occur once at max.
+ * @param argc arg count
+ * @param argv arg vector
+ */
 static void parse_arguments(int argc, char **argv) {
     pgm_name = argv[0];
 
@@ -251,6 +294,14 @@ static void parse_arguments(int argc, char **argv) {
     }
 }
 
+/**
+ * Program entry point.
+ * @brief This function takes care about parameters, creates the socket, waits for incoming connections and sends and receives
+ * @details The main function performs argument parsing. Once a connection is established, the server sends and receives simultaneously.
+ * @param argc The argument counter.
+ * @param argv The argument vector.
+ * @return Returns EXIT_SUCCESS on success, 2 on parity error, 3 on invalid coordinates and 1 otherwise
+ */
 int main(int argc, char *argv[]) {
     // This also handles setting pgm_name
     parse_arguments(argc, argv);
@@ -295,11 +346,12 @@ int main(int argc, char *argv[]) {
     int rounds = 1;
     memset(&hints, 0, sizeof(hints));
     char buffer[80];
+    memset(buffer, 0, sizeof(buffer));
     ssize_t recv_size, send_size;
 
     while (!game_over && (recv_size = recv(connfd, buffer, sizeof(buffer), 0)) > 0) {
         int hit = 0, status = 0;
-        int b = buffer[0];
+        char b = buffer[0];
         // even parity --> 0
         if (calculate_parity(b, 7) == 0) {
             int c = b & 127; // mask = 0111 1111

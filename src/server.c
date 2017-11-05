@@ -43,16 +43,26 @@ static struct addrinfo *ai = NULL;      // addrinfo struct
 static int sockfd = -1;                 // socket file descriptor
 static int connfd = -1;                 // connection file descriptor
 
+/**
+ * @struct coord
+ * @brief maps an x and y coordinate together
+ * @details typedef defined as coord_t
+ */
 typedef struct coord {
-    int x;
-    int y;
+    int x; /**< x coord */
+    int y; /**< y coord */
 } coord_t;
 
+/**
+ * @struct ship
+ * @brief Maps multiple coordinates together. Also keeps track of it's size and where it has been hit.
+ * Every ship acts as a linked list entry and keeps the pointer to the next element.
+ */
 typedef struct ship {
-    int size;
-    coord_t *coords;
-    bool *hits;
-    struct ship *next;
+    int size; /**< size of the ship */
+    coord_t *coords; /**< coord list */
+    bool *hits; /**< hit list */
+    struct ship *next; /**< next element */
 } ship_t;
 
 static char *pgm_name; /**< The program name */
@@ -143,7 +153,7 @@ static ship_t *create_ship(coord_t *bow, coord_t *stern) {
     ship->coords = malloc(sizeof(coord_t) * size);
     ship->hits = malloc(sizeof(bool) * size);
     // check for errors
-    if (ship == NULL) error_exit("Could not allocate memory.", false);
+    if (ship == NULL || ship->coords == NULL || ship->hits == NULL) error_exit("Could not allocate memory.", false);
 
     ship->size = size;
 
@@ -365,24 +375,24 @@ int main(int argc, char *argv[]) {
                     // result = default
                     status = 1;
                     game_over = true;
-                    printf("client wins in %d rounds", rounds);
+                    printf("[%s] client wins in %d rounds", pgm_name, rounds);
                 } else if (rounds == MAX_ROUNDS) {
                     // result = default
                     status = 1;
                     game_over = true;
-                    printf("game lost");
+                    printf("[%s] game lost", pgm_name);
                 }
             } else {
                 status = 3;
                 result = status;
                 game_over = true;
-                fprintf(stderr, "invalid coordinate");
+                fprintf(stderr, "[%s] invalid coordinate", pgm_name);
             }
         } else {
             status = 2;
             result = status;
             game_over = true;
-            fprintf(stderr, "parity error");
+            fprintf(stderr, "[%s] parity error", pgm_name);
         }
 
         char out = (char) ((status << 2) | hit);

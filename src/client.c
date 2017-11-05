@@ -189,18 +189,18 @@ int main(int argc, char *argv[]) {
                 break;
             case 1:
                 // Game over; check hit to determine if client won; return value was already set
-                if (hit == 3) printf("I win :)");
-                else printf("game lost");
+                if (hit == 3) printf("[%s] I win :)", pgm_name);
+                else printf("[%s] game lost", pgm_name);
                 game_over = true;
                 break;
             case 2:
                 // Parity error
-                fprintf(stderr, "parity error");
+                fprintf(stderr, "[%s] parity error", pgm_name);
                 game_over = true;
                 result = status;
             case 3:
                 // Invalid coordinate
-                fprintf(stderr, "invalid coordinate");
+                fprintf(stderr, "[%s] invalid coordinate", pgm_name);
                 game_over = true;
                 result = status;
             default:

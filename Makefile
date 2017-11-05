@@ -7,26 +7,33 @@ SOURCEDIR = src
 BUILDDIR = build
 DOCDIR = docs
 
-# Cannot mix implicit and static pattern rules (static used for OBJECTS) --> Cannot use $(SOURCEDIR)/%.c
-SOURCES = $(wildcard $(SOURCEDIR)/*.c)
-# $(patsubst pattern,replacement,text)
-OBJECTS = $(patsubst $(SOURCEDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES))
+CLIENT_SOURCES = client.c
+CLIENT_OBJECTS = client.o
+SERVER_SOURCES = server.c
+SERVER_OBJECTS = server.o
 
-EXECUTABLE = server
+CLIENT_EXECUTABLE = client
+SERVER_EXECUTABLE = server
 
 .PHONY: all clean docs
-all: $(BUILDDIR) $(BUILDDIR)/$(EXECUTABLE)
+all: $(BUILDDIR) $(BUILDDIR)/$(CLIENT_EXECUTABLE) $(BUILDDIR)/$(SERVER_EXECUTABLE)
 
 docs:
 	doxygen Doxyfile
 
-$(BUILDDIR)/$(EXECUTABLE): $(OBJECTS)
+$(BUILDDIR)/$(CLIENT_EXECUTABLE): $(CLIENT_OBJECTS)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+$(BUILDDIR)/$(SERVER_EXECUTABLE): $(SERVER_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 $(BUILDDIR):
 	mkdir $@
 
-$(OBJECTS): $(BUILDDIR)/%.o : $(SOURCEDIR)/%.c
+$(CLIENT_OBJECTS): $(SOURCEDIR)/$(CLIENT_SOURCES)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(SERVER_OBJECTS): $(SOURCEDIR)/$(SERVER_SOURCES)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:

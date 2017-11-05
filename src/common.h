@@ -55,8 +55,7 @@
  *  print_map(map);
  * @endcode
  */
-static inline void print_map(uint8_t map[MAP_SIZE][MAP_SIZE])
-{
+static inline void print_map(uint8_t map[MAP_SIZE][MAP_SIZE]) {
     int x, y;
 
     printf("  ");
@@ -78,6 +77,17 @@ int max(int a, int b) {
 
 int min(int a, int b) {
     return a < b ? a : b;
+}
+
+int calculate_parity(int x) {
+    int count = 0, b = 1;
+
+    // check bits 0 - 6
+    for (int i = 0; i < 7; i++)
+        if (x & (b << i) == 1) count++;
+
+    // Even amount of 1s -> return 0; 1 otherwise
+    return count % 2;
 }
 
 #endif // COMMON_H

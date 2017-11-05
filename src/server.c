@@ -40,22 +40,6 @@ static struct addrinfo *ai = NULL;      // addrinfo struct
 static int sockfd = -1;                 // socket file descriptor
 static int connfd = -1;                 // connection file descriptor
 
-/* TODO
- * You might want to add further static variables here, for instance to save
- * the programe name (argv[0]) since you should include it in all messages.
- *
- * You should also have some kind of a list which saves information about your
- * ships. For this purpose you might want to define a struct. Bear in mind that
- * your server must keep record about which ships have been hit (and also where
- * they have been hit) in order to know when a ship was sunk.
- *
- * You might also find it convenient to add a few functions, for instance:
- *  - a function which cleans up all resources and exits the program
- *  - a function which parses the arguments from the command line
- *  - a function which adds a new ship to your list of ships
- *  - a function which checks whether a client's shot hit any of your ships
- */
-
 typedef struct coord {
     int x;
     int y;
@@ -71,28 +55,41 @@ typedef struct ship {
 static char *pgm_name; /**< The program name */
 static ship_t *head; /**< The head element of the ship list. (Linked list structure) */
 
-
-
 /**
  * Mandatory usage function.
  * @brief This function writes helpful usage information about the program to stderr.
  * @details global variables: pgm_name
  */
 static void usage(void) {
-    fprintf(stderr, "Server:\n\tSYNOPSIS\n\t\t%s [-p PORT] SHIP1...\n\tEXAMPLE\n"
-            "\t\t%s -p 1280 C2E2 F0H0 B6A6 E8E6 I2I5 H8I8\n", pgm_name, pgm_name);
+    fprintf(stderr, "SYNOPSIS\n\t%s [-p PORT] SHIP1...\n", pgm_name);
     exit(EXIT_FAILURE);
 }
 
+static void clean_up(void) {
+    ship_t *curr;
+    while ((curr = head) != NULL) {
+        head = head->next;
+        // Free allocated memory
+        free(curr->coords);
+        free(curr->hits);
+        free(curr);
+    }
+
+    close(connfd);
+    close(sockfd);
+    freeaddrinfo(ai);
+}
+
 /**
- * Prints anerror message to stderr. Should only be called whenever an error occurs
+ * Prints an error message to stderr. Should only be called whenever an error occurs
  * shall exit with failure.
  * @brief This function prints an error message to stderr and exits with EXIT_FAILURE.
  * @details global variables: pgm_name
  * @param message The message that shall be printed before exiting
  */
 static void error_exit(char *message, bool show_usage) {
-    fprintf(stderr, "%s: An error has occurred: %s\n", pgm_name, message);
+    fprintf(stderr, "[%s] ERROR: %s\n", pgm_name, message);
+    clean_up();
     if (show_usage) usage();
     else exit(EXIT_FAILURE);
 }
@@ -164,7 +161,7 @@ static bool destroyed(ship_t *ship) {
     return true;
 }
 
-static bool all_destroyed() {
+static bool all_destroyed(void) {
     ship_t *curr = head;
     while (curr != NULL) {
         if (!destroyed(curr)) return false;
@@ -223,42 +220,35 @@ static void parse_arguments(int argc, char **argv) {
         }
     }
 
-    if (opt_p > 1) error_exit("Port option can be set only once.", true);
+    if (opt_p > 1) error_exit("Port option can only be set once.", true);
 
     // Check whether there are the correct amount of positional arguments
-    // or an in valid option were supplied. (6 Ships)
+    // or an invalid option were supplied. (6 Ships)
     if ((argc - optind) != 6 || has_invalid_option) usage();
 
     for (int i = 0; i < (argc - optind); i++) {
         char *arg = argv[optind + i];
+        char error[100];
         int len = (int) strlen(arg);
-        if (len != 4) error_exit("Each argument must consist of two capital letters and two digits.", true);
+        if (len != 4) {
+            sprintf(error, "wrong syntax for ship coordinates: %s", arg);
+            error_exit(error, true);
+        }
         // ASCII value for A is 65 and for 0 it is 48 --> generate an int between 0 and 9
         int bx = arg[0] - 65, by = arg[1] - 48, sx = arg[2] - 65, sy = arg[3] - 48;
-        if (bx < 0 || bx > 9 || by < 0 || by > 9 || sx < 0 || sx > 9 || sy < 0 || sy > 9)
-            error_exit("The coordinates of each ship must be between A and J (x) and 0 and 9 (y).", true);
-        coord_t bow = {by, by}, stern = {sx, sy};
-        add_ship(create_ship(&bow, &stern));
+        if (bx < 0 || bx > 9 || by < 0 || by > 9 || sx < 0 || sx > 9 || sy < 0 || sy > 9) {
+            sprintf(error, "coordinates outside of map: %s", arg);
+            error_exit(error, true);
+        }
+
+        coord_t bow = {bx, by}, stern = {sx, sy};
+        ship_t *new = create_ship(&bow, &stern);
+        if (new == NULL) {
+            sprintf(error, "ships must be aligned either horizontally or vertically: %s", arg);
+            error_exit(error, true);
+        }
+        add_ship(new);
     }
-}
-
-static void clean_up(void) {
-    ship_t *curr;
-    while ((curr = head) != NULL) {
-        head = head->next;
-        // Free allocated memory
-        free(curr->coords);
-        free(curr->hits);
-        free(curr);
-    }
-
-    close(connfd);
-    close(sockfd);
-    freeaddrinfo(ai);
-}
-
-static void process_response(char c) {
-
 }
 
 int main(int argc, char *argv[]) {
@@ -296,47 +286,58 @@ int main(int argc, char *argv[]) {
     connfd = accept(sockfd, NULL, NULL);
     if (connfd) error_exit(strerror(errno), false);
 
-    /* TODO
-     * Here you might want to add variables to keep track of the game status,
-     * for instance the number of rounds that have been played.
-     */
+    int result = EXIT_SUCCESS;
+    bool game_over = false;
     int rounds = 1;
     char in;
-    ssize_t recv_size;
+    ssize_t recv_size, send_size;
 
-    while (rounds <= MAX_ROUNDS) {
-        /* TODO
-         * add code to:
-         *  - wait for a request from the client
-         *  - check for a parity error or invalid coordinates in the request
-         *  - check whether a ship was hit and determine the status to return
-         *  - send an according response to the client
-         */
-        recv_size = recv(connfd, &in, 1, MSG_WAITALL);
-        if (recv_size < 0) error_exit(strerror(errno), false);
+    while (!game_over && (recv_size = recv(connfd, &in, 1, MSG_WAITALL)) > 0) {
+        int hit = 0, status = 0;
 
-        int c = in & 0x07, x = c % 10, y = x / 10, p = in & 0x08, hit = 0, status = 0;
+        // even parity --> 0
+        if (calculate_parity(in, 7) == 0) {
+            int c = in & 127; // mask = 0111 1111
+            // int p = (in & 128) >> 7; // mask = 1000 0000; after shift 7 right = 1 / 0
+            int x = c % 10, y = c / 10;
 
-        if (calculate_parity(c) == p) {
             if (x >= 0 && x <= 9 && y >= 0 && y <= 9) {
                 coord_t attempt = {x, y};
                 hit = shoot(&attempt);
-                if (hit == 3 || rounds == MAX_ROUNDS) status = 1;
+                if (hit == 3) {
+                    // result = default
+                    status = 1;
+                    game_over = true;
+                    printf("client wins in %d rounds", rounds);
+                } else if (rounds == MAX_ROUNDS) {
+                    // result = default
+                    status = 1;
+                    game_over = true;
+                    printf("game lost");
+                }
             } else {
                 status = 3;
+                result = status;
+                game_over = true;
+                fprintf(stderr, "invalid coordinate");
             }
         } else {
             status = 2;
+            result = status;
+            game_over = true;
+            fprintf(stderr, "parity error");
         }
 
         char out = (char) ((status << 2) | hit);
-        send(connfd, &out, 1, MSG_WAITALL);
+        send_size = send(connfd, &out, 1, MSG_WAITALL);
+        if (send_size < 0) error_exit(strerror(errno), false);
 
         rounds++;
     }
 
-    /* TODO
-     * cleanup
-     */
+    // 0 == orderly shutdown; -1 == error
+    if (recv_size < 0) error_exit(strerror(errno), false);
+
     clean_up();
+    return result;
 }

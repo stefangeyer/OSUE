@@ -79,15 +79,14 @@ int min(int a, int b) {
     return a < b ? a : b;
 }
 
-int calculate_parity(int x) {
-    int count = 0, b = 1;
+int calculate_parity(int x, int limit) {
+    int parity = 0;
 
-    // check bits 0 - 6
-    for (int i = 0; i < 7; i++)
-        if (x & (b << i) == 1) count++;
+    // xor every bit for 0 to limit (incl.)
+    for (int i = 0; i <= limit; i++)
+        parity ^= (x & (1 << i));
 
-    // Even amount of 1s -> return 0; 1 otherwise
-    return count % 2;
+    return parity;
 }
 
 #endif // COMMON_H

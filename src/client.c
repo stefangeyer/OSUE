@@ -104,9 +104,11 @@ static void dumb_send(void) {
     int coord = 2 + 3 * 10;
     int parity = calculate_parity((char) coord, 6);
     // shift parity to index 7 and combine both
-    char out = (char) (coord | (parity << 7));
-    if (send(sockfd, &out, 1, MSG_WAITALL) < 0)
-        error_exit(strerror(errno), false);
+    char buffer[80];
+    memset(buffer, 0, sizeof(buffer));
+    buffer[0] = (char) (coord | (parity << 7));
+    ssize_t numbuf = send(sockfd, &buffer, sizeof(buffer), 0);
+    if (numbuf < 0) error_exit(strerror(errno), false);
 }
 
 int main(int argc, char *argv[]) {
@@ -116,7 +118,6 @@ int main(int argc, char *argv[]) {
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
 
     // Returns 0 or error code but does not set errno
     int res = getaddrinfo(host, port, &hints, &ai);
@@ -128,15 +129,18 @@ int main(int argc, char *argv[]) {
     res = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
     if (res < 0) error_exit(strerror(errno), false);
 
+    printf("Connection established.\n");
+    
     int result = EXIT_SUCCESS;
     bool game_over = false;
     ssize_t recv_size;
-    char in;
+    char buffer[80];
+    memset(buffer, '0', sizeof(buffer));
     dumb_send();
 
-    while (!game_over && (recv_size = recv(sockfd, &in, 1, MSG_WAITALL)) > 0) {
-        int hit = in & 3; // mask = 11
-        int status = (in & 12) >> 2; // mask = 1100; shift twice to the right
+    while (!game_over && (recv_size = recv(sockfd, buffer, sizeof(buffer), 0)) > 0) {
+        int hit = buffer[0] & 3; // mask = 11
+        int status = (buffer[0] & 12) >> 2; // mask = 1100; shift twice to the right
 
         switch (status) {
             case 0:
@@ -162,6 +166,8 @@ int main(int argc, char *argv[]) {
             default:
                 assert(0);
         }
+
+        dumb_send();
     }
 
     // 0 == orderly shutdown; -1 == error

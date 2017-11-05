@@ -83,8 +83,10 @@ int calculate_parity(int x, int limit) {
     int parity = 0;
 
     // xor every bit for 0 to limit (incl.)
-    for (int i = 0; i <= limit; i++)
-        parity ^= (x & (1 << i));
+    for (int i = 0; i <= limit; i++) {
+        parity ^= x & 1;
+        x >>= 1;
+    }
 
     return parity;
 }

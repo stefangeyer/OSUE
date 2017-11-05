@@ -283,21 +283,26 @@ int main(int argc, char *argv[]) {
     res = listen(sockfd, 1);
     if (res) error_exit(strerror(errno), false);
 
+    printf("Server is bound to port. Waiting for incoming connections...\n");
+
     connfd = accept(sockfd, NULL, NULL);
-    if (connfd) error_exit(strerror(errno), false);
+    if (connfd < 0) error_exit(strerror(errno), false);
+
+    printf("Connection established.\n");
 
     int result = EXIT_SUCCESS;
     bool game_over = false;
     int rounds = 1;
-    char in;
+    memset(&hints, 0, sizeof(hints));
+    char buffer[80];
     ssize_t recv_size, send_size;
 
-    while (!game_over && (recv_size = recv(connfd, &in, 1, MSG_WAITALL)) > 0) {
+    while (!game_over && (recv_size = recv(connfd, buffer, sizeof(buffer), 0)) > 0) {
         int hit = 0, status = 0;
-
+        int b = buffer[0];
         // even parity --> 0
-        if (calculate_parity(in, 7) == 0) {
-            int c = in & 127; // mask = 0111 1111
+        if (calculate_parity(b, 7) == 0) {
+            int c = b & 127; // mask = 0111 1111
             // int p = (in & 128) >> 7; // mask = 1000 0000; after shift 7 right = 1 / 0
             int x = c % 10, y = c / 10;
 
@@ -329,7 +334,7 @@ int main(int argc, char *argv[]) {
         }
 
         char out = (char) ((status << 2) | hit);
-        send_size = send(connfd, &out, 1, MSG_WAITALL);
+        send_size = send(connfd, &out, sizeof(out), 0);
         if (send_size < 0) error_exit(strerror(errno), false);
 
         rounds++;

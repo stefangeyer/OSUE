@@ -43,6 +43,10 @@ static const char *port = DEFAULT_PORT; /**< the port to connect to */
 static struct addrinfo *ai = NULL;      /**< addrinfo struct */
 static int sockfd = -1;                 /**< socket file descriptor */
 
+static uint8_t map[MAP_SIZE][MAP_SIZE];
+static int x = 0;
+static int y = 0;
+
 /**
  * Mandatory usage function.
  * @brief This function writes helpful usage information about the program to stderr.
@@ -124,22 +128,49 @@ static void parse_arguments(int argc, char *argv[]) {
 }
 
 /**
- * Sends static coords to the server over and over again
+ * Shoots at the current location
  *
- * @brief Takes and x and y coord and calculates a parity bit before sending
- * @details Coords: x = 2, y = 3
+ * @brief Sends 1 byte of information to the server
+ * @details encodes the current x and y location, calculates a parity bit and sends using the send function.
  */
-static void dumb_send(void) {
-    // Cite Handout: "A dumb strategy (e.g. repeatedly shooting at the same square) is sufficient"
-    // Dumb strategy: Always hit the same field: x = 2, y = 3
-    int coord = 2 + 3 * 10;
-    int parity = calculate_parity((char) coord, 6);
-    // shift parity to index 7 and combine both
+static void shoot(void) {
+    // bits 0 - 6
+    int coord = x + y * 10;
+    // bit 7
+    int parity = calculate_parity(coord, 6);
     char buffer[80];
     memset(buffer, 0, sizeof(buffer));
+    // assemble
     buffer[0] = (char) (coord | (parity << 7));
     ssize_t numbuf = send(sockfd, &buffer, sizeof(buffer), 0);
     if (numbuf < 0) error_exit(strerror(errno), false);
+}
+
+/**
+ * Handles the received hit value and sets x and y
+ *
+ * @brief Updates the map respectively and sets x and y
+ * @details iterates through every square on the map
+ * @param hit The received hit value
+ */
+static void handle_result(int hit) {
+    switch (hit) {
+        case 0:
+            map[x][y] = SQUARE_EMPTY;
+            break;
+        case 1:
+        case 2:
+            map[x][y] = SQUARE_HIT;
+            break;
+        default:
+            assert(0);
+    }
+
+    if (y > MAP_SIZE - 1) error_exit("End of map reached. Aborting.", false);
+    if (x >= MAP_SIZE - 1) {
+        x = 0;
+        y++;
+    } else x++;
 }
 
 /**
@@ -153,6 +184,9 @@ static void dumb_send(void) {
  */
 int main(int argc, char *argv[]) {
     parse_arguments(argc, argv);
+
+    // Write SQUARE_UNKNOWN to 2d map array
+    memset(map, SQUARE_UNKNOWN, sizeof(map[0][0]) * MAP_SIZE * MAP_SIZE);
 
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -170,13 +204,14 @@ int main(int argc, char *argv[]) {
     if (res < 0) error_exit(strerror(errno), false);
 
     printf("[%s] Connection established.\n", pgm_name);
-    
+
     int result = EXIT_SUCCESS;
     bool game_over = false;
     ssize_t recv_size;
     char buffer[80];
-    memset(buffer, '0', sizeof(buffer));
-    dumb_send();
+    memset(buffer, 0, sizeof(buffer));
+    // Fire initial shot to start the communication
+    shoot();
 
     while (!game_over && (recv_size = recv(sockfd, buffer, sizeof(buffer), 0)) > 0) {
         int hit = buffer[0] & 3; // mask = 11
@@ -185,7 +220,7 @@ int main(int argc, char *argv[]) {
         switch (status) {
             case 0:
                 // Game is going on
-                // With a smart strategy, hit value would be saved
+                handle_result(hit);
                 break;
             case 1:
                 // Game over; check hit to determine if client won; return value was already set
@@ -207,11 +242,13 @@ int main(int argc, char *argv[]) {
                 assert(0);
         }
 
-        dumb_send();
+        shoot();
     }
 
     // 0 == orderly shutdown; -1 == error
     if (recv_size < 0) error_exit(strerror(errno), false);
+
+    print_map(map);
 
     clean_up();
     return result;

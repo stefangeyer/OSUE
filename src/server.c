@@ -375,7 +375,7 @@ int main(int argc, char *argv[]) {
                     status = 1;
                     game_over = true;
                     printf("[%s] client wins in %d rounds\n", pgm_name, rounds);
-                } else if (rounds == MAX_ROUNDS) {
+                } else if (rounds >= MAX_ROUNDS) {
                     // result = default
                     status = 1;
                     game_over = true;

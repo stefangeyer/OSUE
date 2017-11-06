@@ -7,7 +7,8 @@ SOURCEDIR = src
 BUILDDIR = build
 DOCDIR = docs
 
-# no need to specify headers, as they are in the same directory as the source files
+# no need to include headers for compilation, as they are in the same directory as the source files
+HEADERS = common.h
 CLIENT_SOURCES = client.c
 CLIENT_OBJECTS = client.o
 SERVER_SOURCES = server.c
@@ -16,11 +17,15 @@ SERVER_OBJECTS = server.o
 CLIENT_EXECUTABLE = client
 SERVER_EXECUTABLE = server
 
-.PHONY: all clean docs
+.PHONY: all clean docs delivery
 all: $(BUILDDIR) $(BUILDDIR)/$(CLIENT_EXECUTABLE) $(BUILDDIR)/$(SERVER_EXECUTABLE)
 
 docs:
 	doxygen Doxyfile
+
+# PHONY so we can override the tgz when needed
+delivery:
+	tar -cvzf $@.tgz Makefile Doxyfile $(SOURCEDIR)/$(CLIENT_SOURCES) $(SOURCEDIR)/$(SERVER_SOURCES) $(SOURCEDIR)/$(HEADERS)
 
 $(BUILDDIR)/$(CLIENT_EXECUTABLE): $(BUILDDIR)/$(CLIENT_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
@@ -40,3 +45,4 @@ $(BUILDDIR)/$(SERVER_OBJECTS): $(SOURCEDIR)/$(SERVER_SOURCES)
 clean:
 	rm -rf $(BUILDDIR)
 	rm -rf $(DOCDIR)
+	rm -rf delivery.tgz

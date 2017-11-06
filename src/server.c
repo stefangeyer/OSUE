@@ -36,12 +36,12 @@
 #include "common.h"
 
 // Static variables for things you might want to access from several functions:
-static const char *port = DEFAULT_PORT; // the port to bind to
+static const char *port = DEFAULT_PORT; /**< the port to bind to */
 
 // Static variables for resources that should be freed before exiting:
-static struct addrinfo *ai = NULL;      // addrinfo struct
-static int sockfd = -1;                 // socket file descriptor
-static int connfd = -1;                 // connection file descriptor
+static struct addrinfo *ai = NULL;      /**< addrinfo struct */
+static int sockfd = -1;                 /**< socket file descriptor */
+static int connfd = -1;                 /**< connection file descriptor */
 
 /**
  * @struct coord
@@ -51,7 +51,7 @@ static int connfd = -1;                 // connection file descriptor
 typedef struct coord {
     int x; /**< x coord */
     int y; /**< y coord */
-} coord_t;
+} coord_t; /**< coord typedef */
 
 /**
  * @struct ship
@@ -63,7 +63,7 @@ typedef struct ship {
     coord_t *coords; /**< coord list */
     bool *hits; /**< hit list */
     struct ship *next; /**< next element */
-} ship_t;
+} ship_t; /**< ship typedef */
 
 static char *pgm_name; /**< The program name */
 static ship_t *head; /**< The head element of the ship list. (Linked list structure) */
@@ -104,6 +104,7 @@ static void clean_up(void) {
  * @brief This function prints an error message to stderr and exits with EXIT_FAILURE.
  * @details global variables: pgm_name
  * @param message The message that shall be printed before exiting
+ * @param show_usage Display usage before exiting
  */
 static void error_exit(char *message, bool show_usage) {
     fprintf(stderr, "[%s] ERROR: %s\n", pgm_name, message);

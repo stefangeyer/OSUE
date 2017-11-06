@@ -43,9 +43,9 @@ static const char *port = DEFAULT_PORT; /**< the port to connect to */
 static struct addrinfo *ai = NULL;      /**< addrinfo struct */
 static int sockfd = -1;                 /**< socket file descriptor */
 
-static uint8_t map[MAP_SIZE][MAP_SIZE];
-static int x = 0;
-static int y = 0;
+static uint8_t map[MAP_SIZE][MAP_SIZE]; /**< map that stores information about hits */
+static int x = 0; /**< latest X value, that has been hit */
+static int y = 0; /**< latest Y value, that has been hit */
 
 /**
  * Mandatory usage function.
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
     // 0 == orderly shutdown; -1 == error
     if (recv_size < 0) error_exit(strerror(errno), false);
 
-    print_map(map);
+    // print_map(map); // DEBUG ONLY
 
     clean_up();
     return result;

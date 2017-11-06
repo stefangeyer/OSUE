@@ -353,11 +353,10 @@ int main(int argc, char *argv[]) {
 
     int result = EXIT_SUCCESS;
     bool game_over = false;
+    ssize_t recv_size, send_size;
     int rounds = 1;
-    memset(&hints, 0, sizeof(hints));
     char buffer[80];
     memset(buffer, 0, sizeof(buffer));
-    ssize_t recv_size, send_size;
 
     while (!game_over && (recv_size = recv(connfd, buffer, sizeof(buffer), 0)) > 0) {
         int hit = 0, status = 0;
@@ -375,24 +374,24 @@ int main(int argc, char *argv[]) {
                     // result = default
                     status = 1;
                     game_over = true;
-                    printf("[%s] client wins in %d rounds", pgm_name, rounds);
+                    printf("[%s] client wins in %d rounds\n", pgm_name, rounds);
                 } else if (rounds == MAX_ROUNDS) {
                     // result = default
                     status = 1;
                     game_over = true;
-                    printf("[%s] game lost", pgm_name);
+                    printf("[%s] game lost\n", pgm_name);
                 }
             } else {
                 status = 3;
                 result = status;
                 game_over = true;
-                fprintf(stderr, "[%s] invalid coordinate", pgm_name);
+                fprintf(stderr, "[%s] invalid coordinate\n", pgm_name);
             }
         } else {
             status = 2;
             result = status;
             game_over = true;
-            fprintf(stderr, "[%s] parity error", pgm_name);
+            fprintf(stderr, "[%s] parity error\n", pgm_name);
         }
 
         char out = (char) ((status << 2) | hit);

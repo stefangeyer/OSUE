@@ -9,7 +9,7 @@
  * When the server receives a message, it will reply respectively.
  *
  * Example configurations:
- * ./server C3E3 F0H0 B6A6 E5F5 I2I5 F7G7 (client wins in 77)
+ * ./server G1I1 C5E5 A7B7 B0E0 G2G4 I6J6 (client wins in 72)
  * ./server G1I1 C5E5 A7B7 B0E0 I7I9 I9J9 (overlapping ships)
  **/
 

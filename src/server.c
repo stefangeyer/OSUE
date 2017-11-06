@@ -344,12 +344,12 @@ int main(int argc, char *argv[]) {
     res = listen(sockfd, 1);
     if (res) error_exit(strerror(errno), false);
 
-    printf("Server is bound to port. Waiting for incoming connections...\n");
+    printf("[%s] Server is bound to port. Waiting for incoming connections...\n", pgm_name);
 
     connfd = accept(sockfd, NULL, NULL);
     if (connfd < 0) error_exit(strerror(errno), false);
 
-    printf("Connection established.\n");
+    printf("[%s] Connection established.\n", pgm_name);
 
     int result = EXIT_SUCCESS;
     bool game_over = false;

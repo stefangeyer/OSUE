@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
     res = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
     if (res < 0) error_exit(strerror(errno), false);
 
-    printf("Connection established.\n");
+    printf("[%s] Connection established.\n", pgm_name);
     
     int result = EXIT_SUCCESS;
     bool game_over = false;

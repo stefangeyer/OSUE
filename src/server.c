@@ -43,6 +43,10 @@ static struct addrinfo *ai = NULL;      /**< addrinfo struct */
 static int sockfd = -1;                 /**< socket file descriptor */
 static int connfd = -1;                 /**< connection file descriptor */
 
+static int count_len2 = SHIP_CNT_LEN2;  /**< keeps track of the amount of ships with length 2 */
+static int count_len3 = SHIP_CNT_LEN3;  /**< keeps track of the amount of ships with length 3 */
+static int count_len4 = SHIP_CNT_LEN4;  /**< keeps track of the amount of ships with length 4 */
+
 /**
  * @struct coord
  * @brief maps an x and y coordinate together
@@ -146,10 +150,6 @@ static ship_t *create_ship(coord_t *bow, coord_t *stern) {
         return NULL;
     }
 
-    // TODO
-    // check for correct amount of ships with correct lengths + there must be 1 empty space between the ships
-    // a ship's size must be between 2 and 4
-
     ship = malloc(sizeof(ship_t));
     ship->coords = malloc(sizeof(coord_t) * size);
     ship->hits = malloc(sizeof(bool) * size);
@@ -159,13 +159,52 @@ static ship_t *create_ship(coord_t *bow, coord_t *stern) {
     ship->size = size;
 
     for (int i = low; i <= high; i++) {
-        coord_t c1 = {bow->x, i};
-        coord_t c2 = {i, bow->y};
-        ship->coords[i - low] = vertical ? c1 : c2;
+        coord_t v = {bow->x, i}, h = {i, bow->y};
+        ship->coords[i - low] = vertical ? v : h;
         ship->hits[i - low] = false;
     }
 
     return ship;
+}
+
+/**
+ * Checks whether this ship can be added to the map or not. Must be called before adding the ship.
+ *
+ * @param ship
+ */
+static void validate_ship(ship_t *ship) {
+    char error[50];
+
+    // a ship's size must be between 2 and 4
+    if (ship->size >= MIN_SHIP_LEN && ship->size <= MAX_SHIP_LEN) {
+        // Check if too many ships with the given size exist
+        if ((ship->size == 2 && count_len2-- > 0) || (ship->size == 3 && count_len3-- > 0) ||
+            (ship->size == 4 && count_len4-- > 0)) {
+            // Make sure the new ship does not overlap with any existing ships
+            for (int i = 0; i < ship->size; i++) {
+                coord_t nc = ship->coords[i];
+                ship_t *curr = head;
+                while (curr != NULL) {
+                    for (int j = 0; j < curr->size; j++) {
+                        coord_t ec = curr->coords[j];
+                        if (nc.x == ec.x && nc.y == ec.y) {
+                            sprintf(error, "There are overlapping ships at %c%d", 65 + nc.x, nc.y);
+                            error_exit(error, true);
+                        }
+                    }
+                    curr = curr->next;
+                }
+            }
+        } else {
+            sprintf(error, "There are too many ships with the length %d", ship->size);
+            error_exit(error, true);
+        }
+    } else {
+        sprintf(error, "Invalid ship length. Each ship must be between %d and %d squares long", MIN_SHIP_LEN,
+                MAX_SHIP_LEN);
+        error_exit(error, true);
+    }
+
 }
 
 /**
@@ -177,6 +216,9 @@ static ship_t *create_ship(coord_t *bow, coord_t *stern) {
  * @param child The new element
  */
 static void add_ship(ship_t *child) {
+    // make sure the ship does not violate any rules
+    validate_ship(child);
+
     if (head == NULL) {
         head = child;
     } else {

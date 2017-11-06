@@ -1,4 +1,4 @@
-# mydiff by Stefan Geyer
+# battleship by Stefan Geyer
 CC = gcc
 DEFS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_SVID_SOURCE -D_POSIX_C_SOURCE=200809L
 CFLAGS = -Wall -g -std=c99 -pedantic $(DEFS)
@@ -7,6 +7,7 @@ SOURCEDIR = src
 BUILDDIR = build
 DOCDIR = docs
 
+# no need to specify headers, as they are in the same directory as the source files
 CLIENT_SOURCES = client.c
 CLIENT_OBJECTS = client.o
 SERVER_SOURCES = server.c

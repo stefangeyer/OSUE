@@ -103,8 +103,8 @@ int min(int a, int b) {
  * @param limit the amount of bits
  * @return the parity bit (0 or 1)
  */
-int calculate_parity(int x, int limit) {
-    int parity = 0;
+uint8_t calculate_parity(int x, int limit) {
+    uint8_t parity = 0;
 
     // xor every bit for 0 to limit (incl.)
     for (int i = 0; i <= limit; i++) {

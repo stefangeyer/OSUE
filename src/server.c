@@ -402,15 +402,13 @@ int main(int argc, char *argv[]) {
     bool game_over = false;
     ssize_t recv_size, send_size;
     int rounds = 1;
-    char buffer[80];
-    memset(buffer, 0, sizeof(buffer));
+    char buffer;
 
-    while (!game_over && (recv_size = recv(connfd, buffer, sizeof(buffer), 0)) > 0) {
+    while (!game_over && (recv_size = recv(connfd, &buffer, sizeof(buffer), 0)) > 0) {
         int hit = 0, status = 0;
-        char b = buffer[0];
         // even parity --> 0
-        if (calculate_parity(b, 7) == 0) {
-            int c = b & 127; // mask = 0111 1111
+        if (calculate_parity(buffer, 7) == 0) {
+            int c = buffer & 127; // mask = 0111 1111
             // int p = (in & 128) >> 7; // mask = 1000 0000; after shift 7 right = 1 / 0
             int x = c % 10, y = c / 10;
 

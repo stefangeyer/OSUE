@@ -44,8 +44,8 @@ static struct addrinfo *ai = NULL;      /**< addrinfo struct */
 static int sockfd = -1;                 /**< socket file descriptor */
 
 static uint8_t map[MAP_SIZE][MAP_SIZE]; /**< map that stores information about hits */
-static int x = 0; /**< latest X value, that has been hit */
-static int y = 0; /**< latest Y value, that has been hit */
+static uint8_t x = 0; /**< latest X value, that has been hit */
+static uint8_t y = 0; /**< latest Y value, that has been hit */
 
 /**
  * Mandatory usage function.
@@ -135,13 +135,11 @@ static void parse_arguments(int argc, char *argv[]) {
  */
 static void shoot(void) {
     // bits 0 - 6
-    int coord = x + y * 10;
+    uint8_t coord = (uint8_t) (x + y * 10);
     // bit 7
-    int parity = calculate_parity(coord, 6);
-    char buffer[80];
-    memset(buffer, 0, sizeof(buffer));
+    uint8_t parity = calculate_parity(coord, 6);
     // assemble
-    buffer[0] = (char) (coord | (parity << 7));
+    uint8_t buffer = (coord | (parity << 7));
     ssize_t numbuf = send(sockfd, &buffer, sizeof(buffer), 0);
     if (numbuf < 0) error_exit(strerror(errno), false);
 }
@@ -208,14 +206,13 @@ int main(int argc, char *argv[]) {
     int result = EXIT_SUCCESS;
     bool game_over = false;
     ssize_t recv_size;
-    char buffer[80];
-    memset(buffer, 0, sizeof(buffer));
+    uint8_t buffer;
     // Fire initial shot to start the communication
     shoot();
 
-    while (!game_over && (recv_size = recv(sockfd, buffer, sizeof(buffer), 0)) > 0) {
-        int hit = buffer[0] & 3; // mask = 11
-        int status = (buffer[0] & 12) >> 2; // mask = 1100; shift twice to the right
+    while (!game_over && (recv_size = recv(sockfd, &buffer, sizeof(buffer), 0)) > 0) {
+        int hit = buffer & 3; // mask = 11
+        int status = (buffer & 12) >> 2; // mask = 1100; shift twice to the right
 
         switch (status) {
             case 0:

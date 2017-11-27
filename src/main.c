@@ -7,25 +7,46 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <string.h>
+
+#define BUF_SIZE 1024
 
 static char *pgm_name; /**< program name */
 static char *directory;
 static char *prefix = "";
 
 int main(int argc, char *argv[]) {
-    // this also sets pgm_name
-    parse_arguments(argc, argv);
+    parse_arguments(argc, argv); // this also sets pgm_name
 
-    int status;
-    pid_t pid, child_pid = fork();
+    int status, pipefd[2];
+    pid_t pid, child_pid;
+
+    if (pipe(pipefd) == -1) error_exit("Cannot create pipe!");
+
+    child_pid = fork();
     if (child_pid == -1) error_exit("Cannot fork!");
 
     if (child_pid == 0) {
-        // Must must contain argv[0] and end with a NULL pointer
-        char *cmd[] = {"ls", "-l", NULL};
+        // Child
+        close(pipefd[0]); // child does not read
+        dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to pipe
+        char *cmd[] = {"ls", "-1a", directory, NULL}; // Must must contain argv[0] and end with a NULL pointer
         execvp("ls", cmd);
         error_exit("Cannot exec!");
     } else {
+        // Parent
+        close(pipefd[1]); // parent does not write to pipe
+        char buf[BUF_SIZE], *token, *delim = "\n";
+        while (read(pipefd[0], &buf, BUF_SIZE) > 0) {
+            token = strtok(buf, delim);
+            while (token != NULL) {
+
+                token = strtok(NULL, delim);
+            }
+        }
+        close(pipefd[0]);
+
+        // Wait for the child process to finish
         while ((pid = wait(&status)) != child_pid) {
             if (pid != -1) continue;
             // other child

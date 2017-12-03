@@ -109,7 +109,7 @@ char *file_info(char *directory, char *file) {
             if (read(pipefd[0], &buf, BUF_SIZE) >= 0) {
                 out = malloc(strlen(buf) + 1);
                 // Substring
-                size_t offset = strlen(file) + 5; // Remove file name prefix
+                size_t offset = strlen(file) + 4; // Remove file name prefix
                 size_t len = strlen(buf) - offset - 1; // Remove \n
                 strncpy(out, buf + offset, len);
             } else error_exit("Cannot read from pipe!");

@@ -40,6 +40,7 @@ char_array_t *list_directory(char *directory) {
         if (WEXITSTATUS(status) == EXIT_SUCCESS) {
             close(pipefd[1]); // parent does not write to pipe
             char buf[BUF_SIZE], *token, *delim = "\n";
+            memset(buf, 0, sizeof(buf));
             while (read(pipefd[0], &buf, BUF_SIZE) > 0) {
                 token = strtok(buf, delim);
                 for (; token != NULL; i++) {
@@ -102,6 +103,7 @@ char *file_info(char *directory, char *file) {
             close(pipefd[1]); // parent does not write to pipe
 
             char buf[BUF_SIZE];
+            memset(buf, 0, sizeof(buf));
 
             // Single line output
             if (read(pipefd[0], &buf, BUF_SIZE) >= 0) {
@@ -156,6 +158,7 @@ char *md5sum(char *directory, char *file) {
             close(pipefd[1]); // parent does not write to pipe
 
             char buf[BUF_SIZE];
+            memset(buf, 0, sizeof(buf));
 
             // Single line output
             if (read(pipefd[0], &buf, BUF_SIZE) >= 0) {

@@ -111,13 +111,16 @@ char *file_info(char *directory, char *file) {
 
             // Single line output
             if (read(pipefd[0], &buf, BUF_SIZE) >= 0) {
-                size_t text_len = strlen(buf) + 1;
-                out = malloc(text_len);
-                memset(out, 0, text_len); // Make sure there are no leftovers from previous iteration
                 // Substring
-                size_t offset = strlen(file) + 5; // Remove file name prefix
+                size_t spc_idx = strcspn(buf, " "); // Index of first space
+                size_t offset = spc_idx + 1; // Remove filename and trailing space
                 size_t len = strlen(buf) - offset - 1; // Remove \n
+
+                out = malloc(len + 1); // text + \0
+                memset(out, 0, len); // Make sure there are no leftovers from previous iteration
+
                 strncpy(out, buf + offset, len);
+                out[len] = '\0';
             } else error_exit("Cannot read from pipe!");
 
             close(pipefd[0]);
@@ -173,7 +176,7 @@ char *md5sum(char *directory, char *file) {
             // Single line output
             if (read(pipefd[0], &buf, BUF_SIZE) >= 0) {
                 // Substring
-                size_t md5len = 32;
+                size_t md5len = 32; // md5 hash is always 32 chars long
                 size_t len = sizeof(char) * md5len + 1;
                 out = malloc(len); // md5sum = 32 chars + \0
                 memset(out, 0, len);

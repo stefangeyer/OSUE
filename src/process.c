@@ -51,7 +51,7 @@ char_array_t *list_directory(char *directory) {
         if (WEXITSTATUS(status) == EXIT_SUCCESS) {
             close(pipefd[1]); // parent does not write to pipe
             char buf[BUF_SIZE], *token, *delim = "\n";
-            _ssize_t rd_size;
+            ssize_t rd_size;
             memset(buf, 0, sizeof(buf));
             while ((rd_size = read(pipefd[0], &buf, BUF_SIZE)) > 0) {
                 token = strtok(buf, delim);

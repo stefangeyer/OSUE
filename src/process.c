@@ -41,8 +41,9 @@ char_array_t *list_directory(char *directory) {
         if (WEXITSTATUS(status) == EXIT_SUCCESS) {
             close(pipefd[1]); // parent does not write to pipe
             char buf[BUF_SIZE], *token, *delim = "\n";
+            _ssize_t rd_size;
             memset(buf, 0, sizeof(buf));
-            while (read(pipefd[0], &buf, BUF_SIZE) > 0) {
+            while ((rd_size = read(pipefd[0], &buf, BUF_SIZE)) > 0) {
                 token = strtok(buf, delim);
                 for (; token != NULL; i++) {
                     array = realloc(array, sizeof(char *) * (i + 1));
@@ -55,6 +56,14 @@ char_array_t *list_directory(char *directory) {
                     token = strtok(NULL, delim);
                 }
             }
+
+            // -1 --> error
+            if (rd_size < 0) {
+                char error[200];
+                snprintf(error, sizeof(error), "Cannot read from pipe: %s", strerror(errno));
+                error_exit(error);
+            }
+
             close(pipefd[0]);
 
         } else {
@@ -123,7 +132,12 @@ char *file_info(char *directory, char *file) {
 
                 strncpy(out, buf + offset, len);
                 out[len] = '\0';
-            } else error_exit("Cannot read from pipe!");
+            } else {
+                // -1 --> error
+                char error[200];
+                snprintf(error, sizeof(error), "Cannot read from pipe: %s", strerror(errno));
+                error_exit(error);
+            }
 
             close(pipefd[0]);
 
@@ -184,7 +198,12 @@ char *md5sum(char *directory, char *file) {
                 memset(out, 0, len);
                 strncpy(out, buf, md5len);
                 out[md5len] = '\0';
-            } else error_exit("Cannot read from pipe!");
+            } else {
+                // -1 --> error
+                char error[200];
+                snprintf(error, sizeof(error), "Cannot read from pipe: %s", strerror(errno));
+                error_exit(error);
+            }
 
             close(pipefd[0]);
 

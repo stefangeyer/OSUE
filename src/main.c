@@ -105,7 +105,7 @@ void parse_arguments(int argc, char *argv[]) {
     pgm_name = argv[0];
 
     struct option long_options[] = {
-            {"ignorepraefix", no_argument, 0, 'i'}
+            {"ignorepraefix", required_argument, 0, 'i'}
     };
 
     int c, opt_idx, opt_i = 0;

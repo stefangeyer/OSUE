@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
             char *md5 = md5sum(directory, file);
             char *fi = file_info(directory, file);
             if (md5 != NULL){
-                printf("%s %s %s", file, md5, fi);
+                printf("%s %s %s\n", file, md5, fi);
             }
             free(md5);
             free(fi);

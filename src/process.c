@@ -45,8 +45,12 @@ char_array_t *list_directory(char *directory) {
                 token = strtok(buf, delim);
                 for (; token != NULL; i++) {
                     array = realloc(array, sizeof(char *) * (i + 1));
-                    array[i] = malloc(strlen(token) + 1);
+
+                    size_t str_len = strlen(token) + 1;
+                    array[i] = malloc(str_len);
+                    memset(array[i], 0, str_len); // Make sure there are no leftovers from previous iteration
                     strcpy(array[i], token);
+
                     token = strtok(NULL, delim);
                 }
             }
@@ -107,9 +111,11 @@ char *file_info(char *directory, char *file) {
 
             // Single line output
             if (read(pipefd[0], &buf, BUF_SIZE) >= 0) {
-                out = malloc(strlen(buf) + 1);
+                size_t text_len = strlen(buf) + 1;
+                out = malloc(text_len);
+                memset(out, 0, text_len); // Make sure there are no leftovers from previous iteration
                 // Substring
-                size_t offset = strlen(file) + 4; // Remove file name prefix
+                size_t offset = strlen(file) + 5; // Remove file name prefix
                 size_t len = strlen(buf) - offset - 1; // Remove \n
                 strncpy(out, buf + offset, len);
             } else error_exit("Cannot read from pipe!");
@@ -166,9 +172,12 @@ char *md5sum(char *directory, char *file) {
             // Single line output
             if (read(pipefd[0], &buf, BUF_SIZE) >= 0) {
                 // Substring
-                size_t len = strlen(buf) - strlen(file) - 6; // Remove Filename, 2 spaces, \n
-                out = malloc(len + 1);
-                strncpy(out, buf, len);
+                size_t md5len = 32;
+                size_t len = sizeof(char) * md5len + 1;
+                out = malloc(len); // md5sum = 32 chars + \0
+                memset(out, 0, len);
+                strncpy(out, buf, md5len);
+                out[md5len] = '\0';
             } else error_exit("Cannot read from pipe!");
 
             close(pipefd[0]);

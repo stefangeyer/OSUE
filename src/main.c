@@ -51,7 +51,7 @@ void clean_up() {
 }
 
 void error_exit(char *error) {
-    if (error != NULL && strlen(error) > 0) fprintf(stderr, "%s\n", error);
+    if (error != NULL && strlen(error) > 0) fprintf(stderr, "%s: %s\n", pgm_name, error);
     clean_up();
     exit(EXIT_FAILURE);
 }

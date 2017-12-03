@@ -143,6 +143,7 @@ char *md5sum(char *directory, char *file) {
     if (child_pid == 0) {
         // Child
         close(pipefd[0]); // child does not read
+        close(STDERR_FILENO); // void md5sum error messages
         dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to pipe
 
         char f[1024] = "";
@@ -184,7 +185,6 @@ char *md5sum(char *directory, char *file) {
 
         } else {
             // Handling a directory
-            dup2(pipefd[1], STDERR_FILENO); // Void error message
             return NULL;
         }
     }

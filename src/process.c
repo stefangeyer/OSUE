@@ -1,3 +1,13 @@
+/**
+ * @file process.c
+ * @author Stefan Geyer <e1625718 at student.tuwien.ac.at>
+ * @date 03.12.2017
+ *
+ * @brief Subprocess module.
+ *
+ * This module defines functions that require child processes in order to work as intended and other helper functions.
+ **/
+
 #include <sched.h>
 #include <unistd.h>
 #include <wait.h>

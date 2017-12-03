@@ -1,3 +1,14 @@
+/**
+ * @file main.c
+ * @author Stefan Geyer <e1625718 at student.tuwien.ac.at>
+ * @date 03.12.2017
+ *
+ * @brief Main program module.
+ *
+ * This program gets the content of a directory and prints out the name, md5sum and info of every file.
+ * Directories are ignored.
+ **/
+
 #include "main.h"
 #include "process.h"
 #include "util.h"
@@ -8,14 +19,48 @@
 #include <sys/wait.h>
 #include <string.h>
 
-static char *pgm_name; /**< program name */
-static char *directory;
-static char *prefix = "";
+// PROTOTYPE
+
+/**
+ * Takes argc and argv from the main function and sets required properties
+ *
+ * @brief Parses options and makes sure there is one positional argument
+ * @details Parses directory and checks whether the is a prefix to ignore or not
+ * @param argc arg count
+ * @param argv arg vector
+ */
+void parse_arguments(int argc, char *argv[]);
+
+/**
+ * Frees allocated resources
+ *
+ * @brief Frees the pointers stored in the global variables array, md5 and fi
+ * @details global variables: array, md5, fi
+ */
+void clean_up(void);
+
+// GLOBAL VARIABLES
+
+static char *pgm_name; /**< Program name */
+static char *directory; /**< The directory to scan */
+static char *prefix = ""; /**< Prefix of ignored files */
 
 // variables that need to be freed before exiting
-static char_array_t *array;
-static char *md5, *fi;
+static char_array_t *array; /**< The retrieved directory content */
+static char *md5; /**< The current md5sum result */
+static char *fi; /**< The current file info result */
 
+// FUNCTIONS
+
+/**
+ * Program entry point.
+ * @brief This function takes care about parameters, and calls md5sum and file_info for each file in the directory
+ * @details If a file starts with the given prefix, it is ignored. When md5 is NULL, the current file is a directory and is ignored.
+ * global variables: array, md5, fi, prefix
+ * @param argc The argument counter.
+ * @param argv The argument vector.
+ * @return Returns EXIT_SUCCESS or exits via a called function
+ */
 int main(int argc, char *argv[]) {
     parse_arguments(argc, argv); // this also sets pgm_name
 

@@ -3,12 +3,9 @@
 #include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <assert.h>
 #include <getopt.h>
-#include <unistd.h>
 #include <sys/wait.h>
-#include <errno.h>
 #include <string.h>
 
 static char *pgm_name; /**< program name */
@@ -30,9 +27,7 @@ int main(int argc, char *argv[]) {
             char *md5 = md5sum(directory, file);
             char *fi = file_info(directory, file);
             if (md5 != NULL){
-                char s[100];
-                sprintf(s, "%s %s %s", file, md5, fi);
-                printf(s);
+                printf("%s %s %s", file, md5, fi);
             }
             free(md5);
             free(fi);
@@ -45,7 +40,7 @@ int main(int argc, char *argv[]) {
 }
 
 void usage(void) {
-    fprintf(stderr, "SYNOPSIS:\n\t%s [-i ignorepraefix] <directory>", pgm_name);
+    fprintf(stderr, "SYNOPSIS:\n\t%s [-i ignorepraefix] <directory>\n", pgm_name);
     error_exit(NULL);
 }
 

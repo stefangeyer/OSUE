@@ -72,8 +72,6 @@ char *file_info(char *directory, char *file) {
 
     if (pipe(pipefd) == -1) error_exit("Cannot create pipe!");
 
-    printf("%s%s%s", directory, "/", file);
-
     child_pid = fork();
     if (child_pid == -1) error_exit("Cannot fork!");
 

@@ -21,6 +21,7 @@ char_array_t *list_directory(char *directory) {
     if (child_pid == 0) {
         // Child
         close(pipefd[0]); // child does not read
+        close(STDERR_FILENO); // void ls error messages
         dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to pipe
         char *cmd[] = {"ls", "-1a", directory, NULL}; // Must must contain argv[0] and end with a NULL pointer
         execvp("ls", cmd);
@@ -57,7 +58,7 @@ char_array_t *list_directory(char *directory) {
             close(pipefd[0]);
 
         } else {
-            error_exit("Cannot list directory!");
+            error_exit("Cannot get directory content! Did you supply a valid directory?");
         }
     }
 
@@ -83,6 +84,7 @@ char *file_info(char *directory, char *file) {
     if (child_pid == 0) {
         // Child
         close(pipefd[0]); // child does not read
+        close(STDERR_FILENO); // void file error messages
         dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to pipe
 
         char f[1024] = "";
@@ -187,7 +189,7 @@ char *md5sum(char *directory, char *file) {
             close(pipefd[0]);
 
         } else {
-            // Handling a directory
+            // Handling a directory, skip
             return NULL;
         }
     }

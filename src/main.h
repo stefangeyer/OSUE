@@ -3,6 +3,8 @@
 
 void usage(void);
 
+void clean_up(void);
+
 void error_exit(char* error);
 
 void parse_arguments(int argc, char *argv[]);

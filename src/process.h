@@ -5,13 +5,17 @@
 
 #define BUF_SIZE 1024
 
-typedef struct array_struct {
+typedef struct char_array {
     char **array;
     int size;
-} array_t;
+} char_array_t;
 
-array_t *list_directory(char *directory);
+char_array_t *list_directory(char *directory);
 
-void free_array(array_t *array);
+char *file_info(char *directory, char *file);
+
+char *md5sum(char *directory, char *file);
+
+void free_array(char_array_t *array);
 
 #endif //PROCESS_H

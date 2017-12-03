@@ -1,5 +1,6 @@
 #include "main.h"
 #include "process.h"
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -14,28 +15,49 @@ static char *pgm_name; /**< program name */
 static char *directory;
 static char *prefix = "";
 
+// variables that need to be freed before exiting
+static char_array_t *array;
+static char *md5, *fi;
+
 int main(int argc, char *argv[]) {
     parse_arguments(argc, argv); // this also sets pgm_name
 
-    array_t *array = list_directory(directory);
+    array = list_directory(directory);
 
     for (int i = 0; i < array->size; i++) {
-        char *s = array->array[i];
-        printf("%s\n", s);
+        char *file = array->array[i];
+        if (!has_prefix(prefix, file)) {
+            char *md5 = md5sum(directory, file);
+            char *fi = file_info(directory, file);
+            if (md5 != NULL){
+                char s[100];
+                sprintf(s, "%s %s %s", file, md5, fi);
+                printf(s);
+            }
+            free(md5);
+            free(fi);
+        }
     }
 
-    free_array(array);
+    clean_up();
 
     return EXIT_SUCCESS;
 }
 
 void usage(void) {
     fprintf(stderr, "SYNOPSIS:\n\t%s [-i ignorepraefix] <directory>", pgm_name);
-    exit(EXIT_FAILURE);
+    error_exit(NULL);
+}
+
+void clean_up() {
+    free(md5);
+    free(fi);
+    free_array(array);
 }
 
 void error_exit(char *error) {
-    fprintf(stderr, "%s\n", error);
+    if (error != NULL && strlen(error) > 0) fprintf(stderr, "%s\n", error);
+    clean_up();
     exit(EXIT_FAILURE);
 }
 

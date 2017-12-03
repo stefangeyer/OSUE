@@ -184,6 +184,7 @@ char *md5sum(char *directory, char *file) {
 
         } else {
             // Handling a directory
+            dup2(pipefd[1], STDERR_FILENO); // Void error message
             return NULL;
         }
     }

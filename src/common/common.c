@@ -12,7 +12,7 @@ myshm_t *memory_create(void) {
     }
 
     /* extend (set size) */
-    if (ftrunctate(shmfd, sizeof *shared) == -1) {
+    if (ftruncate(shmfd, sizeof *shared) == -1) {
         /* error */
     }
 
@@ -26,6 +26,8 @@ myshm_t *memory_create(void) {
     if (close(shmfd) == -1) {
         /* error */
     }
+
+    return shared;
 }
 
 void memory_destroy(myshm_t *shared) {

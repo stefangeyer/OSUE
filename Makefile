@@ -24,8 +24,8 @@ CLIENT_OBJECTS = $(patsubst $(CLIENT_SOURCEDIR)/%.c,$(CLIENT_BUILDDIR)/%.o,$(CLI
 COMMON_OBJECTS = $(patsubst $(COMMON_SOURCEDIR)/%.c,$(COMMON_BUILDDIR)/%.o,$(COMMON_SOURCES))
 
 COMMON = common
-SERVER = server
-CLIENT = client
+SERVER = auth-server
+CLIENT = auth-client
 
 .PHONY: all clean docs delivery
 all: $(BUILDDIR) $(BUILDDIR)/$(CLIENT) $(BUILDDIR)/$(SERVER)

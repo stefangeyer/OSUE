@@ -8,5 +8,5 @@ file(GLOB COMMON_SOURCES src/common/*.c)
 file(GLOB SERVER_SOURCES src/server/*.c)
 file(GLOB CLIENT_SOURCES src/client/*.c)
 
-add_executable(server ${SERVER_SOURCES} ${COMMON_SOURCES})
-add_executable(client ${CLIENT_SOURCES} ${COMMON_SOURCES})
+add_executable(auth-server ${SERVER_SOURCES} ${COMMON_SOURCES})
+add_executable(auth-client ${CLIENT_SOURCES} ${COMMON_SOURCES})

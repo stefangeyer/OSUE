@@ -1,9 +1,7 @@
-#include <stdlib.h>
-#include <unistd.h>
 #include "common.h"
 
-myshm_t *memory_create(void) {
-    myshm_t *shared;
+authshm_t *memory_create(void) {
+    authshm_t *shared;
 
     /* create and/or open shared memory object */
     int shmfd = shm_open(SHM_NAME, O_RDWR | O_CREAT, PERMISSION);
@@ -30,14 +28,14 @@ myshm_t *memory_create(void) {
     return shared;
 }
 
-void memory_destroy(myshm_t *shared) {
+void memory_destroy(authshm_t *shared) {
     /* unmap shared memory */
-    if (munmap(shared, sizeof *shared) == -1){
+    if (munmap(shared, sizeof *shared) == -1) {
         // error
     }
 
     /* remove shared memory object */
-    if (shm_unlink(SHM_NAME) == -1){
+    if (shm_unlink(SHM_NAME) == -1) {
         /* error */
     }
 }

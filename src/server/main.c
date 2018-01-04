@@ -1,10 +1,6 @@
 #include <stdbool.h>
 #include <assert.h>
-#include "server.h"
-#include "../common/common.h"
-
-static void usage(void);
-void parse_arguments(int argc, char *argv[]);
+#include "main.h"
 
 static char *pgm_name;
 static char *db_file_name = NULL;
@@ -35,7 +31,7 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-void parse_arguments(int argc, char *argv[]) {
+static void parse_arguments(int argc, char *argv[]) {
     pgm_name = argv[0];
 
     int c;

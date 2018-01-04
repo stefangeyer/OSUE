@@ -28,7 +28,7 @@ SERVER = auth-server
 CLIENT = auth-client
 
 .PHONY: all clean docs delivery
-all: $(BUILDDIR) $(BUILDDIR)/$(CLIENT) $(BUILDDIR)/$(SERVER)
+all: $(BUILDDIR) $(BUILDDIR)/$(SERVER) $(BUILDDIR)/$(CLIENT)
 
 docs:
 	doxygen Doxyfile
@@ -37,7 +37,7 @@ docs:
 delivery:
 	tar -cvzf $@.tgz Makefile Doxyfile $(SOURCEDIR)
 
-$(BUILDDIR)/$(SERVER): $(SERVER_OBJECTS) $(COMMON_OBJECTS)
+$(BUILDDIR)/$(SERVER):  $(COMMON_OBJECTS) $(SERVER_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 $(BUILDDIR)/$(CLIENT): $(CLIENT_OBJECTS) $(COMMON_OBJECTS)

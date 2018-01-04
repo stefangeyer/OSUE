@@ -13,8 +13,8 @@
 
 #define USERNAME_LENGTH 50
 #define PASSWORD_LENGTH 50
-#define MESSAGE_LENGTH 1024
-#define CSV_DELIMITER ";"
+#define SECRET_LENGTH 1024
+#define SESSION_LENGTH 10
 
 // Request states
 #define REQUEST_LOGIN = 0
@@ -37,7 +37,7 @@
 typedef struct authshm {
     char *username;
     char *password;
-    char *message;
+    char *secret;
     unsigned int state;
 } authshm_t;
 

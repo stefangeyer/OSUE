@@ -13,7 +13,7 @@ node_t *append_node(node_t *head, node_t *child) {
     }
 }
 
-node_t *create_node(const char *username, const char *password, const char *message) {
+node_t *create_node(const char *username, const char *password, const char *secret) {
     node_t *node = malloc(sizeof(node_t));
     if (node == NULL) {
         // error
@@ -21,16 +21,16 @@ node_t *create_node(const char *username, const char *password, const char *mess
     }
     node->username = malloc(sizeof(char) * (USERNAME_LENGTH + 1));
     node->password = malloc(sizeof(char) * (PASSWORD_LENGTH + 1));
-    node->message = malloc(sizeof(char) * (MESSAGE_LENGTH + 1));
-    if (node->username == NULL || node->password == NULL || node->message == NULL) {
+    node->secret = malloc(sizeof(char) * (SECRET_LENGTH + 1));
+    if (node->username == NULL || node->password == NULL || node->secret == NULL) {
         // error
     }
     strcpy(node->username, username);
     node->username[USERNAME_LENGTH] = '\0';
     strcpy(node->password, password);
     node->password[PASSWORD_LENGTH] = '\0';
-    strcpy(node->message, message);
-    node->message[MESSAGE_LENGTH] = '\0';
+    strcpy(node->secret, secret);
+    node->secret[SECRET_LENGTH] = '\0';
 
     return node;
 }
@@ -39,7 +39,7 @@ void destroy_node(node_t *node) {
     if (node->next != NULL) destroy_node(node->next);
     free(node->username);
     free(node->password);
-    free(node->message);
+    free(node->secret);
     free(node);
 }
 
@@ -51,7 +51,7 @@ void write_node(node_t *node, char *file_name) {
     }
 
     while (node != NULL) {
-        fprintf(fp, "%s%s%s%s%s\n", node->username, CSV_DELIMITER, node->password, CSV_DELIMITER, node->message);
+        fprintf(fp, "%s%s%s%s%s\n", node->username, CSV_DELIMITER, node->password, CSV_DELIMITER, node->secret);
         node = node->next;
     }
 }
@@ -59,7 +59,7 @@ void write_node(node_t *node, char *file_name) {
 node_t *read_node(char *file_name) {
     node_t *head = NULL;
     FILE *fp = fopen(file_name, "r");
-    char *line = NULL, *tok, username[USERNAME_LENGTH + 1], password[PASSWORD_LENGTH + 1], message[MESSAGE_LENGTH + 1];
+    char *line = NULL, *tok, username[USERNAME_LENGTH + 1], password[PASSWORD_LENGTH + 1], message[SECRET_LENGTH + 1];
     size_t len = 0;
 
     if (fp == NULL) {
@@ -102,7 +102,7 @@ node_t *read_node(char *file_name) {
 void print_node(node_t *node) {
     printf("Printing node:\n");
     while (node != NULL) {
-        printf("%s%s%s%s%s\n", node->username, CSV_DELIMITER, node->password, CSV_DELIMITER, node->message);
+        printf("%s%s%s%s%s\n", node->username, CSV_DELIMITER, node->password, CSV_DELIMITER, node->secret);
         node = node->next;
     }
     printf("Done!\n");

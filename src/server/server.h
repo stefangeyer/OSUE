@@ -4,10 +4,12 @@
 #include <stdlib.h>
 #include "../common/common.h"
 
+#define CSV_DELIMITER ";"
+
 typedef struct node {
     char *username;
     char *password;
-    char *message;
+    char *secret;
     struct node *next;
 } node_t;
 
@@ -28,7 +30,7 @@ node_t *append_node(node_t *head, node_t *child);
  * @brief Allocates memory for a new node
  * @return The pointer to the new node
  */
-node_t *create_node(const char *username, const char *password, const char *message);
+node_t *create_node(const char *username, const char *password, const char *secret);
 
 /**
  * Frees and destroys a given node and it's children

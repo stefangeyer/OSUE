@@ -22,15 +22,16 @@ node_t *create_node(const char *username, const char *password, const char *secr
     node->username = malloc(sizeof(char) * (USERNAME_LENGTH + 1));
     node->password = malloc(sizeof(char) * (PASSWORD_LENGTH + 1));
     node->secret = malloc(sizeof(char) * (SECRET_LENGTH + 1));
+    node->session = malloc(sizeof(char) * (SESSION_LENGTH + 1));
     if (node->username == NULL || node->password == NULL || node->secret == NULL) {
         // error
     }
-    strcpy(node->username, username);
-    node->username[USERNAME_LENGTH] = '\0';
-    strcpy(node->password, password);
-    node->password[PASSWORD_LENGTH] = '\0';
-    strcpy(node->secret, secret);
-    node->secret[SECRET_LENGTH] = '\0';
+    strncpy(node->username, username, USERNAME_LENGTH);
+    node->username[USERNAME_LENGTH] = 0;
+    strncpy(node->password, password, PASSWORD_LENGTH);
+    node->password[PASSWORD_LENGTH] = 0;
+    strncpy(node->secret, secret, SECRET_LENGTH);
+    node->secret[SECRET_LENGTH] = 0;
 
     return node;
 }
@@ -40,7 +41,38 @@ void destroy_node(node_t *node) {
     free(node->username);
     free(node->password);
     free(node->secret);
+    free(node->session);
     free(node);
+}
+
+node_t *search_node_for(node_t *node, int field, char *value) {
+    while (node != NULL) {
+        switch (field) {
+            case FIELD_USERNAME:
+                if (strcmp(node->username, value) == 0)
+                    return node;
+                break;
+            case FIELD_PASSWORD:
+                if (strcmp(node->password, value) == 0)
+                    return node;
+                break;
+            case FIELD_SECRET:
+                if (strcmp(node->secret, value) == 0)
+                    return node;
+                break;
+            case FIELD_SESSION:
+                if (strcmp(node->session, value) == 0)
+                    return node;
+                break;
+            default:
+                // error
+                break;
+        }
+
+        node = node->next;
+    }
+
+    return NULL;
 }
 
 void write_node(node_t *node, char *file_name) {
@@ -59,7 +91,7 @@ void write_node(node_t *node, char *file_name) {
 node_t *read_node(char *file_name) {
     node_t *head = NULL;
     FILE *fp = fopen(file_name, "r");
-    char *line = NULL, *tok, username[USERNAME_LENGTH + 1], password[PASSWORD_LENGTH + 1], message[SECRET_LENGTH + 1];
+    char *line = NULL, *tok, username[USERNAME_LENGTH], password[PASSWORD_LENGTH], secret[SECRET_LENGTH];
     size_t len = 0;
 
     if (fp == NULL) {
@@ -72,25 +104,26 @@ node_t *read_node(char *file_name) {
         if (tok == NULL) {
             // error
         }
-        strcpy(username, tok);
-        username[USERNAME_LENGTH] = '\0';
+        strncpy(username, tok, USERNAME_LENGTH);
+        username[USERNAME_LENGTH] = 0;
 
         tok = strtok(NULL, CSV_DELIMITER);
         if (tok == NULL) {
             // error
         }
-        strcpy(password, tok);
-        password[PASSWORD_LENGTH] = '\0';
+        strncpy(password, tok, PASSWORD_LENGTH);
+        password[PASSWORD_LENGTH] = 0;
 
         tok = strtok(NULL, CSV_DELIMITER);
         if (tok == NULL) {
             // error
         }
-        strcpy(message, tok);
-        message[strcspn(message, "\n")] = 0;
+        strncpy(secret, tok, SECRET_LENGTH);
+        secret[SECRET_LENGTH] = 0;
+        secret[strcspn(secret, "\n")] = 0;
 
-        if (head == NULL) head = create_node(username, password, message);
-        else append_node(head, create_node(username, password, message));
+        if (head == NULL) head = create_node(username, password, secret);
+        else append_node(head, create_node(username, password, secret));
     }
 
     fclose(fp);

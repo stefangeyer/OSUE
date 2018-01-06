@@ -1,34 +1,154 @@
 #include <stdbool.h>
 #include <assert.h>
+#include <getopt.h>
+#include <stdio.h>
+#include <semaphore.h>
+#include <fcntl.h>
+#include <string.h>
 #include "main.h"
 
 static char *pgm_name;
 static char *db_file_name = NULL;
 static node_t *head = NULL;
+static auth_memory_t *shared;
+static auth_semaphores_t *semaphores;
+static bool quit = false;
 
+/**
+ * Program entry point.
+ * @brief This function takes care about parameters, creates shared memory and semaphores and then waits for incoming requests
+ * @details Uses semaphores for the critical section
+ * global variables: db_file_name, head, shared, semaphores, quit
+ * @param argc The argument counter.
+ * @param argv The argument vector.
+ * @return Returns EXIT_SUCCESS or exits via a called function
+ */
 int main(int argc, char *argv[]) {
+    if (atexit(clean_up) != 0) {
+        // error
+    }
+
     // This also handles setting pgm_name
     parse_arguments(argc, argv);
 
     if (db_file_name != NULL) head = read_node(db_file_name);
 
-//    authshm_t *shared = memory_create();
+    shared = memory_create();
+    semaphores = semaphores_create();
 
+    while (!quit) {
+        sem_post(semaphores->mutex); // Make sure only one client interacts at a time
 
-//    memory_destroy(shared);
+        sem_wait(semaphores->server); // Wait for the client to send its request
 
-    node_t *n1 = create_node("a", "b", "c"), *n2 = create_node("d", "ax", "hi");
+        if (shared->state <= 0) {
+            // error Client did not set sate correctly
+        }
 
-    head = append_node(head, n1);
-    head = append_node(head, n2);
+        // read request from shm and write response to shm
+        switch (shared->state) {
+            case REQUEST_LOGIN:
+                attempt_login();
+                break;
+            case REQUEST_REGISTER:
+                attempt_register();
+                break;
+            case REQUEST_READ:
+                attempt_read();
+                break;
+            case REQUEST_WRITE:
+                attempt_write();
+                break;
+            case REQUEST_LOGOUT:
+                attempt_logout();
+                break;
+            default:
+                // error
+                break;
+        }
 
-    print_node(head);
-
-    write_node(head, "auth-server.db.csv");
-
-    destroy_node(head);
+        sem_post(semaphores->client); // notify the client that the response is ready
+    }
 
     return EXIT_SUCCESS;
+}
+
+static void attempt_login() {
+    node_t *user = search_node_for(head, FIELD_USERNAME, shared->username);
+
+    if (user == NULL || strcmp(user->password, shared->password) != 0) {
+        shared->state = RESPONSE_LOGIN_FAILURE;
+        return;
+    }
+
+    char tmp_session[SESSION_LENGTH];
+    for(int i = 0; i < SESSION_LENGTH; i++) {
+        sprintf(tmp_session + i, "%x", (int) random() % 16); // Generate random hex string as session id
+    }
+
+    strcpy(user->session, tmp_session);
+    strcpy(shared->session, tmp_session);
+    shared->state = RESPONSE_LOGIN_SUCCESS;
+}
+
+static void attempt_register() {
+    node_t *user = search_node_for(head, FIELD_USERNAME, shared->username);
+
+    if (user != NULL) {
+        shared->state = RESPONSE_REGISTER_FAILURE;
+        return;
+    }
+
+    node_t *new_node = create_node(shared->username, shared->password, "");
+    head = append_node(head, new_node);
+
+    strcpy(shared->session, new_node->session);
+    shared->state = RESPONSE_REGISTER_SUCCESS;
+}
+
+static void attempt_read() {
+    node_t *user = search_node_for(head, FIELD_USERNAME, shared->username);
+
+    if (user == NULL) {
+        shared->state = RESPONSE_READ_FAILURE;
+        return;
+    } else if (strcmp(shared->session, user->session) != 0) {
+        shared->state = RESPONSE_INVALID_SESSION;
+        return;
+    }
+
+    strcpy(shared->secret, user->secret);
+    shared->state = RESPONSE_READ_SUCCESS;
+}
+
+static void attempt_write() {
+    node_t *user = search_node_for(head, FIELD_USERNAME, shared->username);
+
+    if (user == NULL) {
+        shared->state = RESPONSE_WRITE_FAILURE;
+        return;
+    } else if (strcmp(shared->session, user->session) != 0) {
+        shared->state = RESPONSE_INVALID_SESSION;
+        return;
+    }
+
+    strcpy(user->secret, shared->secret);
+    shared->state = RESPONSE_WRITE_SUCCESS;
+}
+
+static void attempt_logout() {
+    node_t *user = search_node_for(head, FIELD_USERNAME, shared->username);
+
+    if (user == NULL) {
+        shared->state = RESPONSE_LOGOUT_FAILURE;
+        return;
+    } else if (strcmp(shared->session, user->session) != 0) {
+        shared->state = RESPONSE_INVALID_SESSION;
+        return;
+    }
+
+    strcpy(user->secret, shared->secret);
+    shared->state = RESPONSE_LOGOUT_SUCCESS;
 }
 
 static void parse_arguments(int argc, char *argv[]) {
@@ -64,12 +184,15 @@ static void parse_arguments(int argc, char *argv[]) {
     if ((argc - optind) != 0 || invopt) usage();
 }
 
-/**
- * Mandatory usage function.
- * @brief This function writes helpful usage information about the program to stderr.
- * @details global variables: pgm_name
- */
 static void usage(void) {
     fprintf(stderr, "SYNOPSIS\n\t%s [-l database]\n", pgm_name);
     exit(EXIT_FAILURE);
+}
+
+static void clean_up() {
+    memory_destroy(shared);
+    semaphores_destroy(semaphores);
+
+    write_node(head, "auth-server.db.csv");
+    destroy_node(head);
 }

@@ -4,12 +4,18 @@
 #include <stdlib.h>
 #include "../common/common.h"
 
+#define FIELD_USERNAME 0
+#define FIELD_PASSWORD 1
+#define FIELD_SECRET 2
+#define FIELD_SESSION 3
+
 #define CSV_DELIMITER ";"
 
 typedef struct node {
     char *username;
     char *password;
     char *secret;
+    char *session;
     struct node *next;
 } node_t;
 
@@ -39,6 +45,17 @@ node_t *create_node(const char *username, const char *password, const char *secr
  * @param node The node to destroy
  */
 void destroy_node(node_t *node);
+
+/**
+ * Looks for a node that contains the given information
+ *
+ * @brief Iterates over the given node and checks whether the given field of any node equals value
+ * @param node The node to iterate through
+ * @param field The field to check. Has to be one of the following: FIELD_USERNAME, FIELD_PASSWORD, FIELD_SECRET, FIELD_SESSION
+ * @param value The value to compare
+ * @return The node if it was found, NULL otherwise
+ */
+node_t *search_node_for(node_t *node, int field, char *value);
 
 /**
  * Writes a node to the disk in CSV format

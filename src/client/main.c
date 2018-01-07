@@ -12,17 +12,23 @@ static int mode;
 int main(int argc, char *argv[]) {
     // This also handles setting pgm_name
     parse_arguments(argc, argv);
+    
+    if (atexit(clean_up) != 0) {
+        error_exit("Cannot define cleanup function");
+    }
+
+    client_init();
 
     if (mode == MODE_LOGIN) {
         if (login(username, password, session) < 0) {
-            // error
+            error_exit("Invalid credentials were provided");
         }
 
         printf("Login was successful.\n");
         interact();
     } else if (mode == MODE_REGISTER) {
         if (signup(username, password) < 0) {
-            // error
+            error_exit("A user already exists with this username");
         }
         printf("Signup was successful.\n");
     }
@@ -37,8 +43,8 @@ static void interact(void) {
                    "\t2) read secret\n"
                    "\t3) logout\n");
 
-    bool go = true;
-    while (go) {
+    bool quit = false;
+    while (!quit) {
         printf("Please select a command (1-3): ");
 
         char input[3], secret[SECRET_LENGTH];
@@ -51,8 +57,8 @@ static void interact(void) {
                 printf("Please enter the new secret: ");
                 fgets(secret, SECRET_LENGTH, stdin);
 
-                if (write_secret(session, secret) < 0) {
-                    // error
+                if (write_secret(username, session, secret) < 0) {
+                    error_exit("Cannot write secret. The session is probably invalid");
                 }
 
                 printf("Secret was successfully updated!\n");
@@ -60,18 +66,18 @@ static void interact(void) {
             case '2':
                 memset(&secret[0], 0, sizeof(secret));
 
-                if (read_secret(session, secret) < 0) {
-                    // error
+                if (read_secret(username, session, secret) < 0) {
+                    error_exit("Cannot read secret. The session is probably invalid");
                 }
 
                 printf("%s\n", secret);
 
                 break;
             case '3':
-                if (logout(session) < 0) {
-                    // error
+                if (logout(username, session) < 0) {
+                    error_exit("Server did not register this logout. The session is probably invalid");
                 }
-                go = false;
+                quit = true;
                 printf("Bye.\n");
                 break;
             default:
@@ -107,7 +113,7 @@ static void parse_arguments(int argc, char *argv[]) {
     }
 
     if ((opt_r + opt_l) == 0 || (opt_r + opt_l) > 1) {
-        // error Either option l or r must occur, but not both of them
+        error_exit("Either option l or r must occur, but not both of them");
     }
 
     mode = (opt_r == 1) ? MODE_REGISTER : MODE_LOGIN;
@@ -119,12 +125,12 @@ static void parse_arguments(int argc, char *argv[]) {
     password = argv[optind + 1];
 }
 
-/**
- * Mandatory usage function.
- * @brief This function writes helpful usage information about the program to stderr.
- * @details global variables: pgm_name
- */
+
 static void usage(void) {
     fprintf(stderr, "SYNOPSIS\n\t%s { -r | -l } username password\n", pgm_name);
     exit(EXIT_FAILURE);
+}
+
+static void clean_up(void) {
+    client_destroy();
 }

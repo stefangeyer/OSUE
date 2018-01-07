@@ -24,46 +24,49 @@ static bool quit = false;
  * @return Returns EXIT_SUCCESS or exits via a called function
  */
 int main(int argc, char *argv[]) {
-    if (atexit(clean_up) != 0) {
-        // error
-    }
-
     // This also handles setting pgm_name
     parse_arguments(argc, argv);
+    
+    if (atexit(clean_up) != 0) {
+        error_exit("Cannot define cleanup function");
+    }
 
     if (db_file_name != NULL) head = read_node(db_file_name);
 
     shared = memory_create();
     semaphores = semaphores_create();
 
+    printf("Server started. Waiting for incoming queries...\n");
+
     while (!quit) {
         sem_post(semaphores->mutex); // Make sure only one client interacts at a time
 
         sem_wait(semaphores->server); // Wait for the client to send its request
 
-        if (shared->state <= 0) {
-            // error Client did not set sate correctly
-        }
-
         // read request from shm and write response to shm
         switch (shared->state) {
             case REQUEST_LOGIN:
                 attempt_login();
+                printf("Processed login");
                 break;
             case REQUEST_REGISTER:
                 attempt_register();
+                printf("Processed signup");
                 break;
             case REQUEST_READ:
                 attempt_read();
+                printf("Processed read");
                 break;
             case REQUEST_WRITE:
                 attempt_write();
+                printf("Processed write");
                 break;
             case REQUEST_LOGOUT:
                 attempt_logout();
+                printf("Processed logout");
                 break;
             default:
-                // error
+                fprintf(stderr, "Client sent an invalid request code: %d", shared->state);
                 break;
         }
 
@@ -101,8 +104,8 @@ static void attempt_register() {
 
     node_t *new_node = create_node(shared->username, shared->password, "");
     head = append_node(head, new_node);
+    print_node(new_node); // TODO debug
 
-    strcpy(shared->session, new_node->session);
     shared->state = RESPONSE_REGISTER_SUCCESS;
 }
 
@@ -176,8 +179,7 @@ static void parse_arguments(int argc, char *argv[]) {
     }
 
     if (opt_l > 1) {
-        // error_exit("Database option can only be set once.", true);
-        // error
+        error_exit("Database option can only be set once.");
     }
 
     // Check whether there are the correct amount of positional arguments or an invalid option were supplied.

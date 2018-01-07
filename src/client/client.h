@@ -3,6 +3,8 @@
 
 #include "../common/common.h"
 
+void client_init(void);
+
 /**
  *
  * @param username
@@ -23,7 +25,7 @@ int login(char *username, char *password, char *session);
  * @param session
  * @return
  */
-int logout(char *session);
+int logout(char *username, char *session);
 
 /**
  *
@@ -31,7 +33,7 @@ int logout(char *session);
  * @param secret
  * @return
  */
-int read_secret(char *session, char *secret);
+int read_secret(char *username, char *session, char *secret);
 
 /**
  *
@@ -39,6 +41,8 @@ int read_secret(char *session, char *secret);
  * @param secret
  * @return
  */
-int write_secret(char *session, char *secret);
+int write_secret(char *username, char *session, char *secret);
+
+void client_destroy(void);
 
 #endif //UE3_CLIENT_H

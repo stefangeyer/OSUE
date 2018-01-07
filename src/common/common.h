@@ -2,6 +2,7 @@
 #define UE3_COMMON_H
 
 #include <semaphore.h>
+#include <stdbool.h>
 
 #define SHM_NAME "/authshm"
 #define PERMISSION (0600)
@@ -115,5 +116,11 @@ auth_semaphores_t *semaphores_open(void);
  * @param semaphores The semaphores to close
  */
 void semaphores_close(auth_semaphores_t *semaphores);
+
+/**
+ * @brief Prints the given reason to stderr and exits with EXIT_FAILURE
+ * @param reason Reason to print
+ */
+void error_exit(char *reason);
 
 #endif //UE3_COMMON_H

@@ -14,18 +14,18 @@ node_t *append_node(node_t *head, node_t *child) {
 }
 
 node_t *create_node(const char *username, const char *password, const char *secret) {
+    char *error_message = "Cannot allocate memory";
     node_t *node = malloc(sizeof(node_t));
     if (node == NULL) {
-        // error
+        error_exit(error_message);
         return NULL;
     }
-    node->username = malloc(sizeof(char) * (USERNAME_LENGTH + 1));
-    node->password = malloc(sizeof(char) * (PASSWORD_LENGTH + 1));
-    node->secret = malloc(sizeof(char) * (SECRET_LENGTH + 1));
-    node->session = malloc(sizeof(char) * (SESSION_LENGTH + 1));
-    if (node->username == NULL || node->password == NULL || node->secret == NULL) {
-        // error
-    }
+
+    if ((node->username = malloc(sizeof(char) * (USERNAME_LENGTH + 1))) == NULL) error_exit(error_message);
+    if ((node->password = malloc(sizeof(char) * (PASSWORD_LENGTH + 1))) == NULL) error_exit(error_message);
+    if ((node->secret = malloc(sizeof(char) * (SECRET_LENGTH + 1))) == NULL) error_exit(error_message);
+    if ((node->session = malloc(sizeof(char) * (SESSION_LENGTH + 1))) == NULL) error_exit(error_message);
+
     strncpy(node->username, username, USERNAME_LENGTH);
     node->username[USERNAME_LENGTH] = 0;
     strncpy(node->password, password, PASSWORD_LENGTH);
@@ -65,7 +65,7 @@ node_t *search_node_for(node_t *node, int field, char *value) {
                     return node;
                 break;
             default:
-                // error
+                error_exit("Invalid field name provided");
                 break;
         }
 
@@ -79,7 +79,7 @@ void write_node(node_t *node, char *file_name) {
     FILE *fp = fopen(file_name, "w");
 
     if (fp == NULL) {
-        // error
+        error_exit("Cannot open file");
     }
 
     while (node != NULL) {
@@ -102,21 +102,21 @@ node_t *read_node(char *file_name) {
     while (getline(&line, &len, fp) != -1) {
         tok = strtok(line, CSV_DELIMITER);
         if (tok == NULL) {
-            // error
+            error_exit("Error reading an username from CSV");
         }
         strncpy(username, tok, USERNAME_LENGTH);
         username[USERNAME_LENGTH] = 0;
 
         tok = strtok(NULL, CSV_DELIMITER);
         if (tok == NULL) {
-            // error
+            error_exit("Error reading a password from CSV");
         }
         strncpy(password, tok, PASSWORD_LENGTH);
         password[PASSWORD_LENGTH] = 0;
 
         tok = strtok(NULL, CSV_DELIMITER);
         if (tok == NULL) {
-            // error
+            error_exit("Error reading a secret from CSV");
         }
         strncpy(secret, tok, SECRET_LENGTH);
         secret[SECRET_LENGTH] = 0;

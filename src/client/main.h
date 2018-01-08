@@ -58,4 +58,18 @@ static int communicate(
  */
 static void clean_up(void);
 
+/**
+ * @brief Sets up the signal handler
+ * @details Handle signals SIGINT and SIGTERM
+ */
+static void create_signal_handler();
+
+/**
+ * The callback function for the signal handler.
+ * Stops the main loop.
+ *
+ * @param signal The signal to handle
+ */
+static void handle_signal(int signal);
+
 #endif //UE3_MAIN_H

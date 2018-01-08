@@ -14,12 +14,14 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include "main.h"
 
 static char *pgm_name, username[USERNAME_LENGTH], password[PASSWORD_LENGTH], session[SESSION_LENGTH], secret[SECRET_LENGTH];
 static auth_memory_t *shared;
 static auth_semaphores_t *semaphores;
 static int mode;
+volatile sig_atomic_t quit = 0;
 
 int main(int argc, char *argv[]) {
     // This also handles setting pgm_name
@@ -28,6 +30,8 @@ int main(int argc, char *argv[]) {
     if (atexit(clean_up) != 0) {
         error_exit("Cannot define cleanup function");
     }
+
+    create_signal_handler();
 
     shared = memory_open();
     semaphores = semaphores_open();
@@ -60,7 +64,6 @@ static void interact(void) {
                    "\t2) read secret\n"
                    "\t3) logout\n");
 
-    bool quit = false;
     while (!quit) {
         printf("Please select a command (1-3): ");
 
@@ -99,13 +102,14 @@ static void interact(void) {
                     snprintf(error, sizeof(error), "Cannot communicate logout. (%d)", res);
                     error_exit(error);
                 }
-                quit = true;
-                printf("Bye.\n");
+                quit = 1;
                 break;
             default:
                 break;
         }
     }
+
+    printf("Bye.\n");
 }
 
 int communicate(
@@ -177,4 +181,17 @@ static void usage(void) {
 static void clean_up(void) {
     memory_close(shared);
     semaphores_close(semaphores);
+}
+
+static void create_signal_handler() {
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+
+    sa.sa_handler = handle_signal;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+}
+
+static void handle_signal(int signal) {
+    quit = 1;
 }

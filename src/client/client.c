@@ -1,3 +1,14 @@
+/**
+ * @file client.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 08.01.2017
+ *
+ * @brief Client program module.
+ *
+ * The client performs either a signup or login with the data provided by the user.
+ * Implements functions defined in client.h
+ **/
+
 #include <string.h>
 #include <stdio.h>
 #include "client.h"

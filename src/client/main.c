@@ -1,3 +1,13 @@
+/**
+ * @file main.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 08.01.2017
+ *
+ * @brief Main program module.
+ *
+ * Brings everything together on the client side. Parses arguments and starts the user interaction
+ **/
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <getopt.h>

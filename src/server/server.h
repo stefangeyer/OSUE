@@ -1,22 +1,37 @@
+/**
+ * @file server.h
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 08.01.2017
+ *
+ * @brief Server program module header.
+ *
+ * Defines constants, structures and function required for the list backend
+ **/
+
 #ifndef UE3_SERVER_H
 #define UE3_SERVER_H
 
 #include <stdlib.h>
 #include "../common/common.h"
 
-#define FIELD_USERNAME 0
-#define FIELD_PASSWORD 1
-#define FIELD_SECRET 2
-#define FIELD_SESSION 3
+#define FIELD_USERNAME 0 /**< Username field index */
+#define FIELD_PASSWORD 1 /**< Password field index */
+#define FIELD_SECRET 2 /**< Secret field index */
+#define FIELD_SESSION 3 /**< Session field index */
 
-#define CSV_DELIMITER ";"
+#define CSV_DELIMITER ";" /**< Delimiter used for writing and reading from the db file */
 
+/**
+ * @struct List node
+ * @brief Represents a record in the database
+ * @details Linked list -> stores successor
+ */
 typedef struct node {
-    char *username;
-    char *password;
-    char *secret;
-    char *session;
-    struct node *next;
+    char *username; /**< Records username */
+    char *password; /**< Records password */
+    char *secret; /**< Records secret */
+    char *session; /**< Records session */
+    struct node *next; /**< Following record or NULL if there is none */
 } node_t;
 
 /**

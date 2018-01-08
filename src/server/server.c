@@ -1,3 +1,13 @@
+/**
+ * @file server.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 08.01.2017
+ *
+ * @brief Server program module.
+ *
+ * Implements the server database and functions that interact with it.
+ **/
+
 #include <stdio.h>
 #include <string.h>
 #include "server.h"

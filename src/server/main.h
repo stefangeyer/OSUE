@@ -1,3 +1,13 @@
+/**
+ * @file main.h
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 08.01.2017
+ *
+ * @brief Main program module.
+ *
+ * This file only exists to have a separate prototype.
+ **/
+
 #ifndef UE3_MAIN_H
 #define UE3_MAIN_H
 
@@ -26,8 +36,18 @@ static void usage(void);
  */
 static void parse_arguments(int argc, char *argv[]);
 
+/**
+ * @brief Sets up the signal handler
+ * @details Handle signals SIGINT and SIGTERM
+ */
 static void create_signal_handler();
 
+/**
+ * The callback function for the signal handler.
+ * Stops the main loop.
+ *
+ * @param signal The signal to handle
+ */
 static void handle_signal(int signal);
 
 /**

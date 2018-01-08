@@ -1,3 +1,13 @@
+/**
+ * @file main.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 08.01.2017
+ *
+ * @brief Main program module.
+ *
+ * Brings everything together on the server side. Parses arguments and waits for client interactions
+ **/
+
 #include <stdbool.h>
 #include <assert.h>
 #include <getopt.h>

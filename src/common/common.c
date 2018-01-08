@@ -1,3 +1,13 @@
+/**
+ * @file common.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 08.01.2017
+ *
+ * @brief Common program module.
+ *
+ * This file implements all function used by server AND client
+ **/
+
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>

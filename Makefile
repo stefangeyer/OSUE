@@ -2,6 +2,7 @@
 CC = gcc
 DEFS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_SVID_SOURCE -D_POSIX_C_SOURCE=200809L
 CFLAGS = -Wall -g -std=c99 -pedantic $(DEFS)
+LDFLAGS = -lrt -lpthread
 
 SOURCEDIR = src
 BUILDDIR = build
@@ -38,10 +39,10 @@ delivery:
 	tar -cvzf $@.tgz Makefile Doxyfile $(SOURCEDIR)
 
 $(BUILDDIR)/$(SERVER): $(COMMON_OBJECTS) $(SERVER_OBJECTS)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(BUILDDIR)/$(CLIENT): $(COMMON_OBJECTS) $(CLIENT_OBJECTS)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(SERVER_BUILDDIR)/%.o: $(SERVER_SOURCEDIR)/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<

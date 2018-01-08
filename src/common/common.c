@@ -34,14 +34,15 @@ auth_memory_t *memory_create(void) {
 }
 
 void memory_destroy(auth_memory_t *shared) {
+    if (shared == NULL) return;
     /* unmap shared memory */
     if (munmap(shared, sizeof *shared) == -1) {
-        error_exit("Cannot unmap shared memory");
+        fprintf(stderr, "Cannot unmap shared memory"); // Dont error_exit, since this is will be called with atexit
     }
 
     /* remove shared memory object */
     if (shm_unlink(SHM_NAME) == -1) {
-        error_exit("Cannot unlink shared memory");
+        fprintf(stderr, "Cannot unlink shared memory"); // Dont error_exit, since this is will be called with atexit
     }
 }
 
@@ -51,7 +52,7 @@ auth_memory_t *memory_open(void) {
     /* create and/or open shared memory object */
     int shmfd = shm_open(SHM_NAME, O_RDWR, 0);
     if (shmfd == -1) {
-        error_exit("Cannot open shared memory");
+        error_exit("Cannot open shared memory. Has the server been started yet?");
     }
 
     /* map shared memory object */
@@ -69,9 +70,10 @@ auth_memory_t *memory_open(void) {
 }
 
 void memory_close(auth_memory_t *shared) {
+    if (shared == NULL) return;
     /* unmap shared memory */
     if (munmap(shared, sizeof *shared) == -1) {
-        error_exit("Cannot unmap shared memory");
+        fprintf(stderr, "Cannot unmap shared memory"); // Dont error_exit, since this is will be called with atexit
     }
 }
 
@@ -109,28 +111,30 @@ auth_semaphores_t *semaphores_create(void) {
 }
 
 void semaphores_destroy(auth_semaphores_t *semaphores) {
+    if (semaphores == NULL) return;
+
     if (sem_close(semaphores->server) < 0) {
-        error_exit("Cannot close server semaphore");
+        fprintf(stderr, "Cannot close server semaphore"); // Dont error_exit, since this is will be called with atexit
     }
 
     if (sem_close(semaphores->client) < 0) {
-        error_exit("Cannot close client semaphore");
+        fprintf(stderr, "Cannot close client semaphore"); // Dont error_exit, since this is will be called with atexit
     }
 
     if (sem_close(semaphores->mutex) < 0) {
-        error_exit("Cannot close mutex semaphore");
+        fprintf(stderr, "Cannot close mutex semaphore"); // Dont error_exit, since this is will be called with atexit
     }
 
     if (sem_unlink(SEM_SERVER) < 0) {
-        error_exit("Cannot unlink server semaphore");
+        fprintf(stderr, "Cannot unlink server semaphore"); // Dont error_exit, since this is will be called with atexit
     }
 
     if (sem_unlink(SEM_CLIENT) < 0) {
-        error_exit("Cannot unlink client semaphore");
+        fprintf(stderr, "Cannot unlink client semaphore"); // Dont error_exit, since this is will be called with atexit
     }
 
     if (sem_unlink(SEM_MUTEX) < 0) {
-        error_exit("Cannot unlink mutex semaphore");
+        fprintf(stderr, "Cannot unlink mutex semaphore"); // Dont error_exit, since this is will be called with atexit
     }
 
     free(semaphores);
@@ -160,16 +164,18 @@ auth_semaphores_t *semaphores_open(void) {
 }
 
 void semaphores_close(auth_semaphores_t *semaphores) {
+    if (semaphores == NULL) return;
+
     if (sem_close(semaphores->server) < 0) {
-        error_exit("Cannot close server semaphore");
+        fprintf(stderr, "Cannot close server semaphore"); // Dont error_exit, since this is will be called with atexit
     }
 
     if (sem_close(semaphores->client) < 0) {
-        error_exit("Cannot close client semaphore");
+        fprintf(stderr, "Cannot close client semaphore"); // Dont error_exit, since this is will be called with atexit
     }
 
     if (sem_close(semaphores->mutex) < 0) {
-        error_exit("Cannot close mutex semaphore");
+        fprintf(stderr, "Cannot close mutex semaphore"); // Dont error_exit, since this is will be called with atexit
     }
 
     free(semaphores);

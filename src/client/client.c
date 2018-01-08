@@ -1,163 +1,99 @@
 #include <string.h>
+#include <stdio.h>
 #include "client.h"
 
-static auth_memory_t *shared;
-static auth_semaphores_t *semaphores;
-
-void client_init(void) {
-    shared = memory_open();
-    semaphores = semaphores_open();
+void request_register(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
+    shared->state = REQUEST_REGISTER;
+    strcpy(shared->username, username);
+    strcpy(shared->password, password);
 }
 
-int signup(char *username, char *password) {
-    if (!shared->server_available) error_exit("Server is not available");
-
-    sem_wait(semaphores->mutex); // notify server, that the client wants to interact
-
-    // prepare request
-    shared->state = REQUEST_REGISTER;
-    strcpy(username, shared->username);
-    strcpy(password, shared->password);
-
-    sem_post(semaphores->server); // request done
-
-    sem_wait(semaphores->client); // wait for response
-
-    // handle response
+int response_register(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
     switch (shared->state) {
         case RESPONSE_REGISTER_SUCCESS:
-            return 0;
+            return CONV_CODE_SUCCESS;
         case RESPONSE_REGISTER_FAILURE:
-            return -1;
+            return CONV_CODE_FAILURE;
         default:
-            error_exit("Received invalid response code");
-            break;
+            printf("Code: %d", shared->state);
+            return CONV_CODE_INVALID_RESPONSE;
     }
-
-    return -1;
 }
 
-int login(char *username, char *password, char *session) {
-    if (!shared->server_available) error_exit("Server is not available");
-
-    sem_wait(semaphores->mutex); // notify server, that the client wants to interact
-
-    // prepare request
+void request_login(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
     shared->state = REQUEST_LOGIN;
-    strcpy(username, shared->username);
-    strcpy(password, shared->password);
+    strcpy(shared->username, username);
+    strcpy(shared->password, password);
+}
 
-    sem_post(semaphores->server); // request done
-
-    sem_wait(semaphores->client); // wait for response
-    // handle response
+int response_login(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
     switch (shared->state) {
         case RESPONSE_LOGIN_SUCCESS:
             strcpy(session, shared->session);
-            return 0;
+            return CONV_CODE_SUCCESS;
         case RESPONSE_LOGIN_FAILURE:
-            return -1;
+            return CONV_CODE_FAILURE;
         default:
-            error_exit("Received invalid response code");
-            break;
+            return CONV_CODE_INVALID_RESPONSE;
     }
-
-    return 0;
 }
 
-int logout(char *username, char *session) {
-    if (!shared->server_available) error_exit("Server is not available");
-
-    sem_wait(semaphores->mutex); // notify server, that the client wants to interact
-
-    // prepare request
+void request_logout(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
     shared->state = REQUEST_LOGOUT;
-    strcpy(username, shared->username);
-    strcpy(session, shared->session);
+    strcpy(shared->username, username);
+    strcpy(shared->session, session);
+}
 
-    sem_post(semaphores->server); // request done
-
-    sem_wait(semaphores->client); // wait for response
-    // handle response
+int response_logout(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
     switch (shared->state) {
         case RESPONSE_LOGOUT_SUCCESS:
-            return 0;
+            return CONV_CODE_SUCCESS;
         case RESPONSE_LOGIN_FAILURE:
-            return -1;
+            return CONV_CODE_FAILURE;
         case RESPONSE_INVALID_SESSION:
-            return -2;
+            return CONV_CODE_INVALID_SESSION;
         default:
-            error_exit("Received invalid response code");
-            break;
+            return CONV_CODE_INVALID_RESPONSE;
     }
-
-    return -1;
 }
 
-int read_secret(char *username, char *session, char *secret) {
-    if (!shared->server_available) error_exit("Server is not available");
-
-    sem_wait(semaphores->mutex); // notify server, that the client wants to interact
-
-    // prepare request
+void request_read(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
     shared->state = REQUEST_READ;
-    strcpy(username, shared->username);
-    strcpy(session, shared->session);
+    strcpy(shared->username, username);
+    strcpy(shared->session, session);
+}
 
-    sem_post(semaphores->server); // request done
-
-    sem_wait(semaphores->client); // wait for response
-    // handle response
+int response_read(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
     switch (shared->state) {
         case RESPONSE_READ_SUCCESS:
-            strcpy(shared->secret, secret);
-            return 0;
+            strcpy(secret, shared->secret);
+            return CONV_CODE_SUCCESS;
         case RESPONSE_READ_FAILURE:
-            return -1;
+            return CONV_CODE_FAILURE;
         case RESPONSE_INVALID_SESSION:
-            return -2;
+            return CONV_CODE_INVALID_SESSION;
         default:
-            error_exit("Received invalid response code");
-            break;
+            return CONV_CODE_INVALID_RESPONSE;
     }
-
-    return -1;
 }
 
-int write_secret(char *username, char *session, char *secret) {
-    if (!shared->server_available) error_exit("Server is not available");
-
-    sem_wait(semaphores->mutex); // notify server, that the client wants to interact
-
-    // prepare request
+void request_write(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
     shared->state = REQUEST_WRITE;
-    strcpy(username, shared->username);
-    strcpy(session, shared->session);
-    strcpy(secret, shared->secret);
+    strcpy(shared->username, username);
+    strcpy(shared->session, session);
+    strcpy(shared->secret, secret);
+}
 
-    sem_post(semaphores->server); // request done
-
-    sem_wait(semaphores->client); // wait for response
-    // handle response
+int response_write(auth_memory_t *shared, char *username, char *password, char *session, char *secret) {
     switch (shared->state) {
         case RESPONSE_WRITE_SUCCESS:
             strcpy(shared->secret, secret);
-            return 0;
+            return CONV_CODE_SUCCESS;
         case RESPONSE_WRITE_FAILURE:
-            return -1;
+            return CONV_CODE_FAILURE;
         case RESPONSE_INVALID_SESSION:
-            return -2;
+            return CONV_CODE_INVALID_SESSION;
         default:
-            error_exit("Received invalid response code");
-            break;
+            return CONV_CODE_INVALID_RESPONSE;
     }
-
-    return -1;
-}
-
-void client_destroy(void) {
-    if (!shared->server_available) error_exit("Server is not available");
-
-    memory_close(shared);
-    semaphores_close(semaphores);
 }

@@ -43,8 +43,6 @@ void memory_destroy(auth_memory_t *shared) {
     if (shm_unlink(SHM_NAME) == -1) {
         error_exit("Cannot unlink shared memory");
     }
-
-    free(shared);
 }
 
 auth_memory_t *memory_open(void) {
@@ -75,8 +73,16 @@ void memory_close(auth_memory_t *shared) {
     if (munmap(shared, sizeof *shared) == -1) {
         error_exit("Cannot unmap shared memory");
     }
+}
 
-    free(shared);
+void print_memory(auth_memory_t *shared) {
+    printf("server_available: %d\n"
+                   "username: %s\n"
+                   "password: %s\n"
+                   "secret: %s\n"
+                   "session: %s\n"
+                   "state: %d\n",
+           shared->server_available, shared->username, shared->password, shared->secret, shared->session, shared->state);
 }
 
 auth_semaphores_t *semaphores_create(void) {
@@ -91,7 +97,7 @@ auth_semaphores_t *semaphores_create(void) {
         error_exit("Cannot create server semaphore");
     }
 
-    if ((semaphores->client = sem_open(SEM_CLIENT, O_CREAT, PERMISSION, 1)) == SEM_FAILED) {
+    if ((semaphores->client = sem_open(SEM_CLIENT, O_CREAT, PERMISSION, 0)) == SEM_FAILED) {
         error_exit("Cannot create client semaphore");
     }
 

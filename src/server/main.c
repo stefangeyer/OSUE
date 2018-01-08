@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
                 printf("Processed logout");
                 break;
             default:
-                fprintf(stderr, "Client sent an invalid request code: %d", shared->state);
+                fprintf(stderr, "Client sent an invalid request code: %d\n", shared->state);
                 break;
         }
 
@@ -94,10 +94,11 @@ static void attempt_login() {
         return;
     }
 
-    char tmp_session[SESSION_LENGTH];
+    char tmp_session[SESSION_LENGTH + 1];
     for(int i = 0; i < SESSION_LENGTH; i++) {
         sprintf(tmp_session + i, "%x", (int) random() % 16); // Generate random hex string as session id
     }
+    tmp_session[SESSION_LENGTH] = 0;
 
     strcpy(user->session, tmp_session);
     strcpy(shared->session, tmp_session);
@@ -114,7 +115,6 @@ static void attempt_register() {
 
     node_t *new_node = create_node(shared->username, shared->password, "");
     head = append_node(head, new_node);
-    print_node(new_node); // TODO debug
 
     shared->state = RESPONSE_REGISTER_SUCCESS;
 }
@@ -160,7 +160,7 @@ static void attempt_logout() {
         return;
     }
 
-    strcpy(user->secret, shared->secret);
+    strcpy(user->secret, "");
     shared->state = RESPONSE_LOGOUT_SUCCESS;
 }
 

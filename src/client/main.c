@@ -6,33 +6,40 @@
 #include <string.h>
 #include "main.h"
 
-static char *pgm_name, *username, *password, session[SESSION_LENGTH];
+static char *pgm_name, username[USERNAME_LENGTH], password[PASSWORD_LENGTH], session[SESSION_LENGTH], secret[SECRET_LENGTH];
+static auth_memory_t *shared;
+static auth_semaphores_t *semaphores;
 static int mode;
 
 int main(int argc, char *argv[]) {
     // This also handles setting pgm_name
     parse_arguments(argc, argv);
-    
+
     if (atexit(clean_up) != 0) {
         error_exit("Cannot define cleanup function");
     }
 
-    client_init();
+    shared = memory_open();
+    semaphores = semaphores_open();
+
+    int res;
+    char error[80];
 
     if (mode == MODE_LOGIN) {
-        if (login(username, password, session) < 0) {
-            error_exit("Invalid credentials were provided");
+        if ((res = communicate(request_login, response_login)) < 0) {
+            snprintf(error, sizeof(error), "Cannot perform login. (%d)", res);
+            error_exit(error);
         }
 
         printf("Login was successful.\n");
         interact();
     } else if (mode == MODE_REGISTER) {
-        if (signup(username, password) < 0) {
-            error_exit("A user already exists with this username");
+        if ((res = communicate(request_register, response_register)) < 0) {
+            snprintf(error, sizeof(error), "Cannot cannot perform signup. (%d)", res);
+            error_exit(error);
         }
         printf("Signup was successful.\n");
     }
-
 
     return EXIT_SUCCESS;
 }
@@ -47,7 +54,8 @@ static void interact(void) {
     while (!quit) {
         printf("Please select a command (1-3): ");
 
-        char input[3], secret[SECRET_LENGTH];
+        int res;
+        char input[3], error[80];
         fgets(input, 3, stdin);
 
         switch (input[0]) {
@@ -56,9 +64,11 @@ static void interact(void) {
 
                 printf("Please enter the new secret: ");
                 fgets(secret, SECRET_LENGTH, stdin);
+                secret[strcspn(secret, "\n")] = 0; // remove trailing \n
 
-                if (write_secret(username, session, secret) < 0) {
-                    error_exit("Cannot write secret. The session is probably invalid");
+                if ((res = communicate(request_write, response_write)) < 0) {
+                    snprintf(error, sizeof(error), "Cannot write secret. (%d)", res);
+                    error_exit(error);
                 }
 
                 printf("Secret was successfully updated!\n");
@@ -66,16 +76,18 @@ static void interact(void) {
             case '2':
                 memset(&secret[0], 0, sizeof(secret));
 
-                if (read_secret(username, session, secret) < 0) {
-                    error_exit("Cannot read secret. The session is probably invalid");
+                if ((res = communicate(request_read, response_read)) < 0) {
+                    snprintf(error, sizeof(error), "Cannot read secret. (%d)", res);
+                    error_exit(error);
                 }
 
-                printf("%s\n", secret);
+                printf("Your secret was received successfully:\n%s\n", secret);
 
                 break;
             case '3':
-                if (logout(username, session) < 0) {
-                    error_exit("Server did not register this logout. The session is probably invalid");
+                if ((res = communicate(request_logout, response_logout)) < 0) {
+                    snprintf(error, sizeof(error), "Cannot communicate logout. (%d)", res);
+                    error_exit(error);
                 }
                 quit = true;
                 printf("Bye.\n");
@@ -84,6 +96,27 @@ static void interact(void) {
                 break;
         }
     }
+}
+
+int communicate(
+        void (*handle_request)(auth_memory_t *shared, char *username, char *password, char *session, char *secret),
+        int (*handle_response)(auth_memory_t *shared, char *username, char *password, char *session, char *secret)
+) {
+    if (!shared->server_available) {
+        error_exit("Server is not available");
+    }
+
+    sem_wait(semaphores->mutex); // notify server, that the client wants to interact
+
+    // prepare request
+    handle_request(shared, username, password, session, secret);
+
+    sem_post(semaphores->server); // request done
+
+    sem_wait(semaphores->client); // wait for response
+
+    // handle response
+    return handle_response(shared, username, password, session, secret);
 }
 
 static void parse_arguments(int argc, char *argv[]) {
@@ -121,8 +154,8 @@ static void parse_arguments(int argc, char *argv[]) {
     // Check whether there are the correct amount of positional arguments (un, pw) or an invalid option were supplied.
     if ((argc - optind) != 2 || invopt) usage();
 
-    username = argv[optind];
-    password = argv[optind + 1];
+    strncpy(username, argv[optind], USERNAME_LENGTH);
+    strncpy(password, argv[optind + 1], PASSWORD_LENGTH);
 }
 
 
@@ -132,5 +165,6 @@ static void usage(void) {
 }
 
 static void clean_up(void) {
-    client_destroy();
+    memory_close(shared);
+    semaphores_close(semaphores);
 }

@@ -10,7 +10,7 @@
 #define USERNAME_LENGTH (50)
 #define PASSWORD_LENGTH (50)
 #define SECRET_LENGTH (1024)
-#define SESSION_LENGTH (10)
+#define SESSION_LENGTH (50)
 
 // semaphores
 #define SEM_SERVER "/auth_server"
@@ -87,6 +87,8 @@ auth_memory_t *memory_open(void);
  * @param shared The memory to close
  */
 void memory_close(auth_memory_t *shared);
+
+void print_memory(auth_memory_t *shared);
 
 /**
  * Creates an instance of auth_semaphores_t containing the required semaphores

@@ -17,6 +17,11 @@ static void parse_arguments(int argc, char *argv[]);
 
 static void interact(void);
 
+static int communicate(
+        void (*handle_request)(auth_memory_t *shared, char *username, char *password, char *session, char *secret),
+        int (*handle_response)(auth_memory_t *shared, char *username, char *password, char *session, char *secret)
+);
+
 static void clean_up(void);
 
 #endif //UE3_MAIN_H

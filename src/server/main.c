@@ -160,7 +160,7 @@ static void attempt_logout() {
         return;
     }
 
-    strcpy(user->secret, "");
+    strcpy(user->session, "");
     shared->state = RESPONSE_LOGOUT_SUCCESS;
 }
 

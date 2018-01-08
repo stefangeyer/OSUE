@@ -33,10 +33,13 @@ node_t *create_node(const char *username, const char *password, const char *secr
     strncpy(node->secret, secret, SECRET_LENGTH);
     node->secret[SECRET_LENGTH] = 0;
 
+    node->next = NULL;
+
     return node;
 }
 
 void destroy_node(node_t *node) {
+    if (node == NULL) return;
     if (node->next != NULL) destroy_node(node->next);
     free(node->username);
     free(node->password);

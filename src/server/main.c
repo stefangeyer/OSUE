@@ -83,6 +83,8 @@ int main(int argc, char *argv[]) {
         if (sem_post(semaphores->client) == -1) error_exit(ERROR_INTERRUPTED);
     }
 
+    printf("Exiting...\n");
+
     return EXIT_SUCCESS;
 }
 
@@ -209,6 +211,8 @@ static void clean_up() {
 
     write_node(head, "auth-server.db.csv");
     destroy_node(head);
+
+    printf("Wrote database to auth-server.db.csv\n");
 }
 
 static void create_signal_handler() {

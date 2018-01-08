@@ -26,6 +26,10 @@ static void usage(void);
  */
 static void parse_arguments(int argc, char *argv[]);
 
+static void create_signal_handler();
+
+static void handle_signal(int signal);
+
 /**
  * @brief This function interacts with the shared memory to perform the login
  * @details Creates a session id on success and should use the macros RESPONSE_LOGIN_SUCCESS or RESPONSE_LOGIN_FAILURE as state

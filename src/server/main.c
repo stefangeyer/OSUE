@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 #include "main.h"
 
 static char *pgm_name;
@@ -13,7 +14,7 @@ static char *db_file_name = NULL;
 static node_t *head = NULL;
 static auth_memory_t *shared;
 static auth_semaphores_t *semaphores;
-static bool quit = false;
+volatile sig_atomic_t quit = 0;
 
 /**
  * Program entry point.
@@ -32,7 +33,11 @@ int main(int argc, char *argv[]) {
         error_exit("Cannot define cleanup function");
     }
 
-    if (db_file_name != NULL) head = read_node(db_file_name);
+    create_signal_handler();
+
+    if (db_file_name != NULL) {
+        head = read_node(db_file_name);
+    }
 
     shared = memory_create();
     semaphores = semaphores_create();
@@ -56,23 +61,18 @@ int main(int argc, char *argv[]) {
         switch (shared->state) {
             case REQUEST_LOGIN:
                 attempt_login();
-                printf("Processed login");
                 break;
             case REQUEST_REGISTER:
                 attempt_register();
-                printf("Processed signup");
                 break;
             case REQUEST_READ:
                 attempt_read();
-                printf("Processed read");
                 break;
             case REQUEST_WRITE:
                 attempt_write();
-                printf("Processed write");
                 break;
             case REQUEST_LOGOUT:
                 attempt_logout();
-                printf("Processed logout");
                 break;
             default:
                 fprintf(stderr, "Client sent an invalid request code: %d\n", shared->state);
@@ -209,4 +209,17 @@ static void clean_up() {
 
     write_node(head, "auth-server.db.csv");
     destroy_node(head);
+}
+
+static void create_signal_handler() {
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+
+    sa.sa_handler = handle_signal;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+}
+
+static void handle_signal(int signal) {
+    quit = 1;
 }

@@ -91,11 +91,12 @@ void write_node(node_t *node, char *file_name) {
 node_t *read_node(char *file_name) {
     node_t *head = NULL;
     FILE *fp = fopen(file_name, "r");
-    char *line = NULL, *tok, username[USERNAME_LENGTH], password[PASSWORD_LENGTH], secret[SECRET_LENGTH];
+    char *line = NULL, *tok, username[USERNAME_LENGTH + 1], password[PASSWORD_LENGTH + 1], secret[SECRET_LENGTH + 1];
     size_t len = 0;
 
     if (fp == NULL) {
-        // Cannot open file -> return empty head (NULL)
+        // Cannot open file -> error
+        error_exit("Cannot open the specified database file.");
         return NULL;
     }
 
@@ -122,8 +123,7 @@ node_t *read_node(char *file_name) {
         secret[SECRET_LENGTH] = 0;
         secret[strcspn(secret, "\n")] = 0;
 
-        if (head == NULL) head = create_node(username, password, secret);
-        else append_node(head, create_node(username, password, secret));
+        head = append_node(head, create_node(username, password, secret));
     }
 
     fclose(fp);

@@ -37,7 +37,11 @@
 #define RESPONSE_LOGOUT_FAILURE (-10)
 #define RESPONSE_INVALID_SESSION (-11)
 
+// error messages
+#define ERROR_INTERRUPTED "Program interrupted. Aborting.\n"
+
 typedef struct auth_memory {
+    bool server_available;
     char username[USERNAME_LENGTH];
     char password[PASSWORD_LENGTH];
     char secret[SECRET_LENGTH];

@@ -10,6 +10,8 @@ void client_init(void) {
 }
 
 int signup(char *username, char *password) {
+    if (!shared->server_available) error_exit("Server is not available");
+
     sem_wait(semaphores->mutex); // notify server, that the client wants to interact
 
     // prepare request
@@ -36,6 +38,8 @@ int signup(char *username, char *password) {
 }
 
 int login(char *username, char *password, char *session) {
+    if (!shared->server_available) error_exit("Server is not available");
+
     sem_wait(semaphores->mutex); // notify server, that the client wants to interact
 
     // prepare request
@@ -62,6 +66,8 @@ int login(char *username, char *password, char *session) {
 }
 
 int logout(char *username, char *session) {
+    if (!shared->server_available) error_exit("Server is not available");
+
     sem_wait(semaphores->mutex); // notify server, that the client wants to interact
 
     // prepare request
@@ -89,6 +95,8 @@ int logout(char *username, char *session) {
 }
 
 int read_secret(char *username, char *session, char *secret) {
+    if (!shared->server_available) error_exit("Server is not available");
+
     sem_wait(semaphores->mutex); // notify server, that the client wants to interact
 
     // prepare request
@@ -117,6 +125,8 @@ int read_secret(char *username, char *session, char *secret) {
 }
 
 int write_secret(char *username, char *session, char *secret) {
+    if (!shared->server_available) error_exit("Server is not available");
+
     sem_wait(semaphores->mutex); // notify server, that the client wants to interact
 
     // prepare request
@@ -146,6 +156,8 @@ int write_secret(char *username, char *session, char *secret) {
 }
 
 void client_destroy(void) {
+    if (!shared->server_available) error_exit("Server is not available");
+
     memory_close(shared);
     semaphores_close(semaphores);
 }

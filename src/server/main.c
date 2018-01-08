@@ -5,6 +5,7 @@
 #include <semaphore.h>
 #include <fcntl.h>
 #include <string.h>
+#include <errno.h>
 #include "main.h"
 
 static char *pgm_name;
@@ -39,9 +40,17 @@ int main(int argc, char *argv[]) {
     printf("Server started. Waiting for incoming queries...\n");
 
     while (!quit) {
-        sem_post(semaphores->mutex); // Make sure only one client interacts at a time
+        shared->server_available = true; // tell clients, that the server is available
 
-        sem_wait(semaphores->server); // Wait for the client to send its request
+        // Make sure only one client interacts at a time
+        if (sem_post(semaphores->mutex) == -1) error_exit(ERROR_INTERRUPTED);
+
+        // Wait for the client to send its request
+        if (sem_wait(semaphores->server) == -1) {
+            // interrupted by system call?
+            if (errno == EINTR) continue;
+            error_exit(ERROR_INTERRUPTED);
+        }
 
         // read request from shm and write response to shm
         switch (shared->state) {
@@ -70,7 +79,8 @@ int main(int argc, char *argv[]) {
                 break;
         }
 
-        sem_post(semaphores->client); // notify the client that the response is ready
+        // notify the client that the response is ready
+        if (sem_post(semaphores->client) == -1) error_exit(ERROR_INTERRUPTED);
     }
 
     return EXIT_SUCCESS;
@@ -192,6 +202,8 @@ static void usage(void) {
 }
 
 static void clean_up() {
+    shared->server_available = false; // tell clients to disconnect
+
     memory_destroy(shared);
     semaphores_destroy(semaphores);
 

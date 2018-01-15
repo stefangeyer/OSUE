@@ -1,4 +1,4 @@
-# hashsum by Stefan Geyer
+# secvault by Stefan Geyer
 CC = gcc
 DEFS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_SVID_SOURCE -D_POSIX_C_SOURCE=200809L
 CFLAGS = -Wall -g -std=c99 -pedantic $(DEFS)
@@ -12,7 +12,7 @@ SOURCES = $(wildcard $(SOURCEDIR)/*.c)
 # $(patsubst pattern,replacement,text)
 OBJECTS = $(patsubst $(SOURCEDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES))
 
-EXECUTABLE = hashsum
+EXECUTABLE = svctl
 
 .PHONY: all clean docs delivery
 all: $(BUILDDIR) $(BUILDDIR)/$(EXECUTABLE)

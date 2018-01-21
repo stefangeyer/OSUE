@@ -8,13 +8,13 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <errno.h>
-#include "svctl.h"
+#include "../module/common.h"
 
 char *pgm_name, key[KEY_SIZE];
 int id, size, command;
 
 void usage(void) {
-    fprintf(stderr, "USAGE: ./%s [-c <size>|-k|-e|-d] <secvault id>\n", pgm_name);
+    fprintf(stderr, "USAGE: %s [-c <size>|-k|-e|-d] <secvault id>\n", pgm_name);
     exit(EXIT_FAILURE);
 }
 
@@ -53,7 +53,7 @@ int parse_int(char *str) {
 void parse_arguments(int argc, char *argv[]) {
     pgm_name = argv[0];
 
-    int c, opt_c = 0, opt_ked = 0;
+    int c, opt_count = 0;
     bool invopt = false;
 
     // 3rd param: optstring defines legitimate option characters.
@@ -64,14 +64,20 @@ void parse_arguments(int argc, char *argv[]) {
                 size = parse_int(optarg);
                 if (size < 1 || size > 1048576) usage();
 
-                command = c;
-                opt_c++;
+                command = CMD_CREATE;
+                opt_count++;
                 break;
             case 'k':
+                command = CMD_CHANGE_KEY;
+                opt_count++;
+                break;
             case 'e':
+                command = CMD_CLEAR;
+                opt_count++;
+                break;
             case 'd':
-                command = c;
-                opt_ked++;
+                command = CMD_REMOVE;
+                opt_count++;
                 break;
             case '?':
                 invopt = true;
@@ -81,12 +87,14 @@ void parse_arguments(int argc, char *argv[]) {
         }
     }
 
+    if (opt_count == 0) command = CMD_SIZE;
+
     // Check whether there are the correct amount of positional arguments and if the options where provided correctly
-    if ((argc - optind) != 1 || invopt || (opt_c + opt_ked) > 1) usage();
+    if ((argc - optind) != 1 || invopt || opt_count > 1) usage();
 
     id = parse_int(argv[optind]);
 
-    if (command == 'c' || command == 'k') {
+    if (command == CMD_CREATE || command == CMD_CHANGE_KEY) {
         read_key(key, KEY_SIZE);
     }
 }
@@ -95,7 +103,7 @@ int main(int argc, char *argv[]) {
     memset(key, 0, KEY_SIZE);
     parse_arguments(argc, argv);
 
-    sv_message_t message;
+    ctl_message_t message;
     memset(&message, 0, sizeof(message));
     message.id = id;
     message.size = size;
@@ -106,7 +114,7 @@ int main(int argc, char *argv[]) {
         error_exit("Cannot open secvault device");
     }
 
-    if (ioctl(ctlfd, command, &message) < 0) {
+    if (ioctl(ctlfd, (unsigned long) command, &message) < 0) {
         error_exit("Command execution failed");
     }
 

@@ -2,6 +2,7 @@
 ### CMake template
 CMakeFiles
 CMakeScripts
+CMakeLists.txt
 Testing
 cmake_install.cmake
 install_manifest.txt

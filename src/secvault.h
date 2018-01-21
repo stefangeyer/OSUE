@@ -1,4 +1,0 @@
-#ifndef UE4_SECVAULT_H
-#define UE4_SECVAULT_H
-
-#endif //UE4_SECVAULT_H

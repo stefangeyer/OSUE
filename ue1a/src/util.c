@@ -19,18 +19,21 @@ size_t get_line(FILE *fp, char *line, int n) {
     else return strlen(line);
 }
 
-void for_each_line(char *fname, int n, void (*run)(char*, size_t)) {
-    size_t len;
-    char line[n];
-    FILE *fp = fopen(fname, "r");
+char *read_file(char *file, int n) {
+    size_t len = 0, clen = 0;
+    char line[n], *result = NULL;
+    FILE *fp = fopen(file, "r");
 
     if (fp == NULL) {
-        error_exit("Cannot open file: %s", fname);
+        error_exit("Cannot open file: %s", file);
     }
 
     while ((len = get_line(fp, line, n)) > 0) {
-        run(line, len);
+        clen += len + 1;
+        result = realloc(result, clen);
+        strcat(result, line);
     }
 
     fclose(fp);
+    return result;
 }

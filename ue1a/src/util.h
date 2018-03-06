@@ -23,13 +23,13 @@
 size_t get_line(FILE *fp, char *line, int n);
 
 /**
- * Execute code for each line of a file
- * @brief Reads each line from the file with the given name and calls the given function with the line's content
- * @details Opens and closes the file with the given name, each line may at most be n chars long
- * @param fname The name of the file to process
+ * Read a files content into a string.
+ * @brief Opens the file with the given name and reads up to n chars from each line and returns the result
+ * @details String is allocated. Therefore needs to be freed by the user
+ * @param file The name of the file to open
  * @param n A line's max length
- * @param run This function is called for each line. the 1st param represents the lines content, the 2nd its length.
+ * @return Pointer to the allocated string
  */
-void for_each_line(char *fname, int n, void (*run)(char*, size_t));
+char *read_file(char *file, int n);
 
 #endif //UE1A_UTIL_H

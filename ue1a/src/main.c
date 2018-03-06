@@ -19,11 +19,7 @@
 #include "util.h"
 #include "main.h"
 
-#define LINE_LENGTH 100 /**< Lines ready by this program should not be longer than the specified amount */
-
-char *pgm_name; /**< The program name.*/
-static FILE *output_file = NULL; /**< Output file handle. Must be global to use it with atexit*/
-static int _read, _written; /**< Read and written counter. Global for easier access*/
+char *pgm_name; /**< The program name. */
 
 void error_exit(char *format, ...) {
     va_list arg;
@@ -38,16 +34,6 @@ void error_exit(char *format, ...) {
 }
 
 /**
- * @brief Clean up function that frees or closes allocated resources
- * @details Should be called with atexit
- */
-static void clean_up(void) {
-    if (output_file != NULL) {
-        fclose(output_file);
-    }
-}
-
-/**
  * Mandatory usage function.
  * @brief This function writes helpful usage information about the program to stderr.
  * @details global variables: pgm_name
@@ -57,21 +43,17 @@ static void usage(void) {
     exit(EXIT_FAILURE);
 }
 
-/**
- * Transforms the given input.
- * @brief Transforms the given string to it's compressed form and prints it
- * @details Input may at most be ilen chars long
- * @param input The input string
- * @param ilen The input length
- */
-static void transform(char *input, size_t ilen) {
-    size_t olen = 2 * ilen;
-    char output[olen];
+static void perform_compress(char *src, int *read, int *written, FILE *output) {
+    size_t clen = strlen(src);
+    size_t rlen = clen * 2;
+    char *res = malloc(rlen);
 
-    _read += ilen;
-    _written += strcmpr(input, output, olen);
+    *read += clen;
+    *written += strncmpr(src, res, rlen);
 
-    fprintf(output_file, "%s", output);
+    fprintf(output, "%s\n", res);
+
+    free(res);
 }
 
 /**
@@ -87,15 +69,10 @@ static void transform(char *input, size_t ilen) {
 int main(int argc, char *argv[]) {
     pgm_name = argv[0];
 
-    if (atexit(clean_up) != 0) {
-        error_exit("Cannot define cleanup function");
-    }
-
-    int c, opt_o = 0;
+    int c, opt_o = 0, read = 0, written = 0;
     float pct;
     bool invopt = false;
-
-    output_file = stdout;
+    FILE *output = stdout;
 
     // 3rd param: optstring defines legitimate option characters.
     // Appending : to an argument character implies, that the option requires an argument
@@ -104,8 +81,8 @@ int main(int argc, char *argv[]) {
             case 'o':
                 // Option o is optional and may occur once.
                 opt_o++;
-                output_file = fopen(optarg, "w");
-                if (output_file == NULL) {
+                output = fopen(optarg, "w");
+                if (output == NULL) {
                     error_exit("Cannot open output file: %s", optarg);
                 }
                 break;
@@ -121,21 +98,27 @@ int main(int argc, char *argv[]) {
     if (opt_o > 1 || invopt) usage();
 
     if ((argc - optind) > 0) {
-        for (int i = 0; i < (argc - optind); i++) for_each_line(argv[optind + i], LINE_LENGTH, transform);
+        for (int i = 0; i < (argc - optind); i++) {
+            char *input = read_file(argv[optind + i], LINE_LENGTH);
+            perform_compress(input, &read, &written, output);
+            free(input);
+        }
     } else {
         char input[LINE_LENGTH];
 
         printf("Please enter some text: ");
         fgets(input, LINE_LENGTH, stdin);
 
-        transform(input, strlen(input));
+        perform_compress(input, &read, &written, output);
     }
 
-    pct = (float) _written * 100 / _read;
+    pct = (float) written * 100 / read;
 
     fprintf(stderr, "Gelesen:\t\t %d Zeichen\n"
             "Geschrieben:\t\t %d Zeichen\n"
-            "Komprimierungsrate:\t %.2f %%\n", _read, _written, pct);
+            "Kompressionsrate:\t %.2f %%\n", read, written, pct);
+
+    fclose(output);
 
     return EXIT_SUCCESS;
 }

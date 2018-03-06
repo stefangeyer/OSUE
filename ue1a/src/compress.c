@@ -1,3 +1,13 @@
+/**
+ * @file compress.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 06.03.2018
+ *
+ * @brief Compression module.
+ *
+ * Provides compression functions.
+ **/
+
 #include <string.h>
 #include <stdio.h>
 #include "compress.h"

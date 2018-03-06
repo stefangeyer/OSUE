@@ -1,9 +1,18 @@
+/**
+ * @file main.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 06.03.2018
+ *
+ * @brief Main program module.
+ *
+ * This program compresses the given input and prints out a summary afterwards.
+ **/
+
 #include <stdio.h>
 #include <getopt.h>
 #include <stdbool.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
 #include "compress.h"
@@ -12,9 +21,9 @@
 
 #define LINE_LENGTH 100 /**< Lines ready by this program should not be longer than the specified amount */
 
-char *pgm_name;
-static FILE *output_file = NULL;
-static int _read, _written;
+char *pgm_name; /**< The program name.*/
+static FILE *output_file = NULL; /**< Output file handle. Must be global to use it with atexit*/
+static int _read, _written; /**< Read and written counter. Global for easier access*/
 
 void error_exit(char *format, ...) {
     va_list arg;
@@ -28,17 +37,33 @@ void error_exit(char *format, ...) {
     exit(EXIT_FAILURE);
 }
 
+/**
+ * @brief Clean up function that frees or closes allocated resources
+ * @details Should be called with atexit
+ */
 static void clean_up(void) {
     if (output_file != NULL) {
         fclose(output_file);
     }
 }
 
+/**
+ * Mandatory usage function.
+ * @brief This function writes helpful usage information about the program to stderr.
+ * @details global variables: pgm_name
+ */
 static void usage(void) {
     fprintf(stderr, "SYNOPSIS\n\t%s [-o outfile] [infile1] [infile2] ...\n", pgm_name);
     exit(EXIT_FAILURE);
 }
 
+/**
+ * Transforms the given input.
+ * @brief Transforms the given string to it's compressed form and prints it
+ * @details Input may at most be ilen chars long
+ * @param input The input string
+ * @param ilen The input length
+ */
 static void transform(char *input, size_t ilen) {
     size_t olen = 2 * ilen;
     char output[olen];
@@ -49,6 +74,16 @@ static void transform(char *input, size_t ilen) {
     fprintf(output_file, "%s", output);
 }
 
+/**
+ * Program entry point.
+ * @brief This function takes care about parameters and initiates the compression
+ * @details The main function performs argument parsing using the getopt function. Duplicate options without arguments
+ * are not allowed.
+ * global variables: pgm_name
+ * @param argc The argument counter.
+ * @param argv The argument vector.
+ * @return Returns EXIT_SUCCESS or exists via fopen_error.
+ */
 int main(int argc, char *argv[]) {
     pgm_name = argv[0];
 

@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    int c, opt_o = 0, pos_args = argc - optind;
+    int c, opt_o = 0;
     float pct;
     bool invopt = false;
 
@@ -55,7 +55,6 @@ int main(int argc, char *argv[]) {
             case 'o':
                 // Option o is optional and may occur once.
                 opt_o++;
-                printf("%s\n", optarg);
                 output_file = fopen(optarg, "w");
                 if (output_file == NULL) {
                     fprintf(stderr, "Cannot open output file: %s\n", optarg);
@@ -73,7 +72,7 @@ int main(int argc, char *argv[]) {
     // Check whether all options were supplied correctly or not
     if (opt_o > 1 || invopt) usage();
 
-    for (int i = 0; i < pos_args; i++) for_each_line(argv[optind + i], LINE_LENGTH, transform);
+    for (int i = 0; i < (argc - optind); i++) for_each_line(argv[optind + i], LINE_LENGTH, transform);
 
     pct = (float) _written * 100 / _read;
 

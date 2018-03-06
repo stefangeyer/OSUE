@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <string.h>
 #include "compress.h"
 #include "util.h"
 #include "main.h"
@@ -84,7 +85,16 @@ int main(int argc, char *argv[]) {
     // Check whether all options were supplied correctly or not
     if (opt_o > 1 || invopt) usage();
 
-    for (int i = 0; i < (argc - optind); i++) for_each_line(argv[optind + i], LINE_LENGTH, transform);
+    if ((argc - optind) > 0) {
+        for (int i = 0; i < (argc - optind); i++) for_each_line(argv[optind + i], LINE_LENGTH, transform);
+    } else {
+        char input[LINE_LENGTH];
+
+        printf("Please enter some text: ");
+        fgets(input, LINE_LENGTH, stdin);
+
+        transform(input, strlen(input));
+    }
 
     pct = (float) _written * 100 / _read;
 

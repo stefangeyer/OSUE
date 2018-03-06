@@ -4,14 +4,28 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include "compress.h"
 #include "util.h"
+#include "main.h"
 
 #define LINE_LENGTH 100 /**< Lines ready by this program should not be longer than the specified amount */
 
-static char *pgm_name;
+char *pgm_name;
 static FILE *output_file = NULL;
 static int _read, _written;
+
+void error_exit(char *format, ...) {
+    va_list arg;
+    char f[1024];
+    snprintf(f, 1024, "%s: %s\n", pgm_name, format);
+
+    va_start(arg, format);
+    vfprintf(stderr, f, arg);
+    va_end(arg);
+
+    exit(EXIT_FAILURE);
+}
 
 static void clean_up(void) {
     if (output_file != NULL) {
@@ -38,8 +52,7 @@ int main(int argc, char *argv[]) {
     pgm_name = argv[0];
 
     if (atexit(clean_up) != 0) {
-        fprintf(stderr, "Cannot define cleanup function\n");
-        return EXIT_FAILURE;
+        error_exit("Cannot define cleanup function");
     }
 
     int c, opt_o = 0;
@@ -57,8 +70,7 @@ int main(int argc, char *argv[]) {
                 opt_o++;
                 output_file = fopen(optarg, "w");
                 if (output_file == NULL) {
-                    fprintf(stderr, "Cannot open output file: %s\n", optarg);
-                    return EXIT_FAILURE;
+                    error_exit("Cannot open output file: %s", optarg);
                 }
                 break;
             case '?':

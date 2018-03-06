@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "util.h"
+#include "main.h"
 
 size_t get_line(FILE *fp, char *line, int n) {
     if (fgets(line, n, fp) == NULL) return 0;
@@ -15,8 +16,7 @@ void for_each_line(char *fname, int llen, void (*run)(char*, size_t)) {
     FILE *fp = fopen(fname, "r");
 
     if (fp == NULL) {
-        fprintf(stderr, "Cannot open file: %s\n", fname);
-        exit(EXIT_FAILURE);
+        error_exit("Cannot open file: %s", fname);
     }
 
     while ((len = get_line(fp, line, llen)) > 0) {

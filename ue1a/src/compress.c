@@ -8,7 +8,8 @@ int strcmpr(const char *src, char *res, size_t n) {
     memset(res, 0, n);
 
     for (int i = 0; src[i] != '\0'; i++) {
-        if (src[i] == prev) cnt++;
+        if (src[i] == '\r') continue; // fix for cygwin
+        else if (src[i] == prev) cnt++;
         else {
             off += snprintf(res + off, n, "%c%d", prev, cnt);
             cnt = 1;

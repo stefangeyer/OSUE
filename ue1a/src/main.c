@@ -67,7 +67,7 @@ static void perform_compress(char *src, int *read, int *written, FILE *output) {
 int main(int argc, char *argv[]) {
     pgm_name = argv[0];
 
-    int c, opt_o = 0, read = 0, written = 0;
+    int c, opt_o = 0, pargs, read = 0, written = 0;
     float pct;
     bool invopt = false;
     FILE *output = stdout;
@@ -95,8 +95,10 @@ int main(int argc, char *argv[]) {
     // Check whether all options were supplied correctly or not
     if (opt_o > 1 || invopt) usage();
 
-    if ((argc - optind) > 0) {
-        for (int i = 0; i < (argc - optind); i++) {
+    pargs = argc - optind;
+
+    if (pargs > 0) {
+        for (int i = 0; i < pargs; i++) {
             char *input = read_file(argv[optind + i], LINE_LENGTH);
             perform_compress(input, &read, &written, output);
             free(input);

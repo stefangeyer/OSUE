@@ -36,6 +36,10 @@ char *read_file(char *file, int n) {
         } else {
             result = realloc(result, clen);
         }
+        if (result == NULL) {
+            fclose(fp);
+            error_exit("Memory allocation failed");
+        }
         strcat(result, line);
     }
 

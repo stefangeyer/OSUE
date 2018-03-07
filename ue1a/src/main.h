@@ -1,3 +1,13 @@
+/**
+ * @file main.h
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 06.03.2018
+ *
+ * @brief Main program header.
+ *
+ * Declares functions of the main module that being are used in other modules
+ **/
+
 #ifndef UE1A_MAIN_H
 #define UE1A_MAIN_H
 

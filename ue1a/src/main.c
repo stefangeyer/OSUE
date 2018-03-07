@@ -46,14 +46,12 @@ static void usage(void) {
 static void perform_compress(char *src, int *read, int *written, FILE *output) {
     size_t clen = strlen(src);
     size_t rlen = clen * 2;
-    char *res = malloc(rlen);
+    char res[rlen];
 
     *read += clen;
     *written += strncmpr(src, res, rlen);
 
     fprintf(output, "%s\n", res);
-
-    free(res);
 }
 
 /**

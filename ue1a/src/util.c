@@ -30,7 +30,12 @@ char *read_file(char *file, int n) {
 
     while ((len = get_line(fp, line, n)) > 0) {
         clen += len + 1;
-        result = realloc(result, clen);
+        if (result == NULL) {
+            result = malloc(clen);
+            memset(result, 0, clen);
+        } else {
+            result = realloc(result, clen);
+        }
         strcat(result, line);
     }
 

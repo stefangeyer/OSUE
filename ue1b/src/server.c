@@ -1,7 +1,7 @@
 /**
  * @file server.c
  * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
- * @date 05.11.2017
+ * @date 09.04.2018
  *
  * @brief Server program module.
  *

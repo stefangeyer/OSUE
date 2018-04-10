@@ -37,15 +37,8 @@
 
 static char *pgm_name; /**< The program name.*/
 
-static const char *host = DEFAULT_HOST; /**< the host to connect to */
-static const char *port = DEFAULT_PORT; /**< the port to connect to */
-
 static struct addrinfo *ai = NULL;      /**< addrinfo struct */
 static int sockfd = -1;                 /**< socket file descriptor */
-
-static uint8_t map[MAP_SIZE][MAP_SIZE]; /**< map that stores information about hits */
-static uint8_t x = 0; /**< latest X value, that has been hit */
-static uint8_t y = 0; /**< latest Y value, that has been hit */
 
 /**
  * Mandatory usage function.
@@ -89,8 +82,10 @@ static void error_exit(char *message, bool show_usage) {
  * @details Parses host and port; both can occur once at max.
  * @param argc arg count
  * @param argv arg vector
+ * @param host Pointer to the host string
+ * @param port Pointer to the port string
  */
-static void parse_arguments(int argc, char *argv[]) {
+static void parse_arguments(int argc, char *argv[], char **host, char **port) {
     pgm_name = argv[0];
 
     int c;
@@ -104,12 +99,12 @@ static void parse_arguments(int argc, char *argv[]) {
             case 'h':
                 // Option h is optional and may occur once.
                 opt_h++;
-                host = optarg;
+                *host = optarg;
                 break;
             case 'p':
                 // Option p is optional and may occur once.
                 opt_p++;
-                port = optarg;
+                *port = optarg;
                 break;
             case '?':
                 has_invalid_option = true;
@@ -128,20 +123,50 @@ static void parse_arguments(int argc, char *argv[]) {
 }
 
 /**
- * Shoots at the current location
+ * Generates the values hit and status from the given response buffer
  *
- * @brief Sends 1 byte of information to the server
- * @details encodes the current x and y location, calculates a parity bit and sends using the send function.
+ * @brief Generates hit and status from buffer using bit masks
+ * @details hit mask: 11, status mask: 1100 + shift
+ * @param buffer The buffer to extract the values from
+ * @param hit Pointer to the hit value
+ * @param status Pointer to the status value
  */
-static void shoot(void) {
+static void parse_response(uint8_t buffer, uint8_t *hit, uint8_t *status) {
+    *hit = (uint8_t) (buffer & 3); // mask = 11
+    *status = (uint8_t) ((buffer & 12) >> 2); // mask = 1100; shift twice to the right
+}
+
+/**
+ * Merges the x and y value into one result
+ *
+ * @brief Generates a request from coordinates
+ * @details Shifts the x and y value accordingly and also generates the parity bit
+ * @param x The x value
+ * @param y The y value
+ * @param request Pointer to the request data
+ */
+static void assemble_request(uint8_t x, uint8_t y, uint8_t *request) {
     // bits 0 - 6
     uint8_t coord = (uint8_t) (x + y * 10);
     // bit 7
     uint8_t parity = calculate_parity(coord, 6);
     // assemble
-    uint8_t buffer = (coord | (parity << 7));
-    ssize_t numbuf = send(sockfd, &buffer, sizeof(buffer), 0);
-    if (numbuf < 0) error_exit(strerror(errno), false);
+    *request = (coord | (parity << 7));
+}
+
+/**
+ * Shoots at the current location
+ *
+ * @brief Sends 1 byte of information to the server
+ * @details encodes the current x and y location, calculates a parity bit and sends using the send function.
+ * @param x The x value
+ * @param y The y value
+ */
+static void shoot(uint8_t x, uint8_t y) {
+    uint8_t result;
+    assemble_request(x, y, &result);
+    ssize_t size = send(sockfd, &result, sizeof(result), 0);
+    if (size < 0) error_exit(strerror(errno), false);
 }
 
 /**
@@ -150,25 +175,58 @@ static void shoot(void) {
  * @brief Updates the map respectively and sets x and y
  * @details iterates through every square on the map
  * @param hit The received hit value
+ * @param map Pointer to the map 2d array
+ * @param x Pointer to the x value
+ * @param y Pointer to the y value
  */
-static void handle_result(int hit) {
+static void handle_result(uint8_t hit, uint8_t (*map)[MAP_SIZE], uint8_t *x, uint8_t *y) {
     switch (hit) {
         case 0:
-            map[x][y] = SQUARE_EMPTY;
+            map[*x][*y] = SQUARE_EMPTY;
             break;
         case 1:
         case 2:
-            map[x][y] = SQUARE_HIT;
+            map[*x][*y] = SQUARE_HIT;
             break;
         default:
             assert(0);
     }
 
-    if (y > MAP_SIZE - 1) error_exit("End of map reached. Aborting.", false);
-    if (x >= MAP_SIZE - 1) {
-        x = 0;
-        y++;
-    } else x++;
+    if (*y > MAP_SIZE - 1) {
+        error_exit("End of map reached. Aborting.", false);
+    }
+
+    if (*x >= MAP_SIZE - 1) {
+        *x = 0;
+        *y += 1;
+    } else *x += 1;
+}
+
+/**
+ * Establishes the connection using the given host and port
+ *
+ * @brief Creates a socket and attempts to connect to the server
+ * @details Sets global variables to allow convenient cleanup
+ * @param host Pointer to the hostname
+ * @param port Pointer to the port
+ */
+static void establish_connection(char **host, char **port) {
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    // Returns 0 or error code but does not set errno
+    int res = getaddrinfo(*host, *port, &hints, &ai);
+    if (res != 0) error_exit((char *) gai_strerror(res), false);
+
+    sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    if (sockfd < 0) error_exit(strerror(errno), false);
+
+    res = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
+    if (res < 0) error_exit(strerror(errno), false);
+
+    printf("[%s] Connection established.\n", pgm_name);
 }
 
 /**
@@ -181,43 +239,35 @@ static void handle_result(int hit) {
  * @return Returns EXIT_SUCCESS on success, 2 on parity error, 3 on invalid coordinates and 1 otherwise
  */
 int main(int argc, char *argv[]) {
-    parse_arguments(argc, argv);
+    // Parse arguments
+    char *host = DEFAULT_HOST, *port = DEFAULT_PORT;
+    parse_arguments(argc, argv, &host, &port);
 
+    // Establish the connection
+    ssize_t size;
+    uint8_t buffer;
+    establish_connection(&host, &port);
+
+    int result = EXIT_SUCCESS;
+
+    uint8_t x = 0, y = 0;
+    uint8_t map[MAP_SIZE][MAP_SIZE];
     // Write SQUARE_UNKNOWN to 2d map array
     memset(map, SQUARE_UNKNOWN, sizeof(map[0][0]) * MAP_SIZE * MAP_SIZE);
 
-    struct addrinfo hints;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-
-    // Returns 0 or error code but does not set errno
-    int res = getaddrinfo(host, port, &hints, &ai);
-    if (res != 0) error_exit((char *) gai_strerror(res), false);
-
-    sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-    if (sockfd < 0) error_exit(strerror(errno), false);
-
-    res = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
-    if (res < 0) error_exit(strerror(errno), false);
-
-    printf("[%s] Connection established.\n", pgm_name);
-
-    int result = EXIT_SUCCESS;
-    bool game_over = false;
-    ssize_t recv_size;
-    uint8_t buffer;
     // Fire initial shot to start the communication
-    shoot();
+    shoot(x, y);
 
-    while (!game_over && (recv_size = recv(sockfd, &buffer, sizeof(buffer), 0)) > 0) {
-        int hit = buffer & 3; // mask = 11
-        int status = (buffer & 12) >> 2; // mask = 1100; shift twice to the right
+    bool game_over = false;
+
+    while (!game_over && (size = recv(sockfd, &buffer, sizeof(buffer), 0)) > 0) {
+        uint8_t hit, status;
+        parse_response(buffer, &hit, &status);
 
         switch (status) {
             case 0:
                 // Game is going on
-                handle_result(hit);
+                handle_result(hit, map, &x, &y);
                 break;
             case 1:
                 // Game over; check hit to determine if client won; return value was already set
@@ -239,13 +289,13 @@ int main(int argc, char *argv[]) {
                 assert(0);
         }
 
-        shoot();
+        shoot(x, y);
     }
 
-    // 0 == orderly shutdown; -1 == error
-    if (recv_size < 0) error_exit(strerror(errno), false);
+    // 0 >= orderly shutdown; -1 == error
+    if (size < 0) error_exit(strerror(errno), false);
 
-    // print_map(map); // DEBUG ONLY
+    print_map(map); // DEBUG ONLY
 
     clean_up();
     return result;

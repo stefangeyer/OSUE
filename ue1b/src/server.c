@@ -155,10 +155,15 @@ static ship_t *create_ship(coord_t *bow, coord_t *stern) {
     }
 
     ship = malloc(sizeof(ship_t));
+
+    // check for errors
+    if (ship == NULL) error_exit("Could not allocate memory.", false);
+
     ship->coords = malloc(sizeof(coord_t) * size);
     ship->hits = malloc(sizeof(bool) * size);
+
     // check for errors
-    if (ship == NULL || ship->coords == NULL || ship->hits == NULL) error_exit("Could not allocate memory.", false);
+    if (ship->coords == NULL || ship->hits == NULL) error_exit("Could not allocate memory.", false);
 
     ship->size = size;
 
@@ -439,7 +444,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "[%s] parity error\n", pgm_name);
         }
 
-        char out = (char) ((status << 2) | hit);
+        uint8_t out = (uint8_t) ((status << 2) | hit);
         send_size = send(connfd, &out, sizeof(out), 0);
         if (send_size < 0) error_exit(strerror(errno), false);
 

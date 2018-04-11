@@ -39,18 +39,6 @@
 // stuff shared by client and server:
 #include "common.h"
 
-// Static variables for things you might want to access from several functions:
-static const char *port = DEFAULT_PORT; /**< the port to bind to */
-
-// Static variables for resources that should be freed before exiting:
-static struct addrinfo *ai = NULL;      /**< addrinfo struct */
-static int sockfd = -1;                 /**< socket file descriptor */
-static int connfd = -1;                 /**< connection file descriptor */
-
-static int count_len2 = SHIP_CNT_LEN2;  /**< keeps track of the amount of ships with length 2 */
-static int count_len3 = SHIP_CNT_LEN3;  /**< keeps track of the amount of ships with length 3 */
-static int count_len4 = SHIP_CNT_LEN4;  /**< keeps track of the amount of ships with length 4 */
-
 /**
  * @struct coord
  * @brief maps an x and y coordinate together
@@ -73,8 +61,18 @@ typedef struct ship {
     struct ship *next; /**< next element */
 } ship_t; /**< ship typedef */
 
+// Static variables for things you might want to access from several functions:
 static char *pgm_name; /**< The program name */
+
 static ship_t *head; /**< The head element of the ship list. (Linked list structure) */
+static int count_len2 = SHIP_CNT_LEN2;  /**< keeps track of the amount of ships with length 2 */
+static int count_len3 = SHIP_CNT_LEN3;  /**< keeps track of the amount of ships with length 3 */
+static int count_len4 = SHIP_CNT_LEN4;  /**< keeps track of the amount of ships with length 4 */
+
+// Static variables for resources that should be freed before exiting:
+static struct addrinfo *ai = NULL;      /**< addrinfo struct */
+static int sockfd = -1;                 /**< socket file descriptor */
+static int connfd = -1;                 /**< connection file descriptor */
 
 /**
  * Mandatory usage function.
@@ -177,7 +175,8 @@ static ship_t *create_ship(coord_t *bow, coord_t *stern) {
 }
 
 /**
- * Checks whether this ship can be added to the map or not. Must be called before adding the ship.
+ * Checks whether this ship can be added to the map or not.
+ * Must be called before adding the ship.
  *
  * @param ship
  */
@@ -275,14 +274,14 @@ static bool all_destroyed(void) {
  *         2 = hit and destroyed, but there are other ships left
  *         3 = hit and destroyed and this was the last ship --> client wins
  */
-static int shoot(coord_t *coord) {
+static uint8_t shoot(coord_t *coord) {
     ship_t *curr = head;
-    int result = 0;
+    uint8_t result = 0;
     while (curr != NULL) {
         for (int i = 0; i < curr->size; i++) {
             if (curr->coords[i].x == coord->x && curr->coords[i].y == coord->y) {
                 curr->hits[i] = true;
-                result = destroyed(curr) ? 2 : 1;
+                result = (uint8_t) (destroyed(curr) ? 2 : 1);
                 break;
             }
         }
@@ -301,12 +300,12 @@ static int shoot(coord_t *coord) {
  * @param argc arg count
  * @param argv arg vector
  */
-static void parse_arguments(int argc, char **argv) {
+static void parse_arguments(int argc, char **argv, char **port) {
     pgm_name = argv[0];
 
     int c;
     int opt_p = 0;
-    bool has_invalid_option = false;
+    bool invopt = false;
 
     // 3rd param: optstring defines legitimate option characters.
     // Appending : to an argument character implicates that the option requires an argument
@@ -315,10 +314,10 @@ static void parse_arguments(int argc, char **argv) {
             case 'p':
                 // Option p is optional and may occur once.
                 opt_p++;
-                port = optarg;
+                *port = optarg;
                 break;
             case '?':
-                has_invalid_option = true;
+                invopt = true;
                 break;
             default:
                 assert(0);
@@ -329,7 +328,7 @@ static void parse_arguments(int argc, char **argv) {
 
     // Check whether there are the correct amount of positional arguments
     // or an invalid option were supplied. (6 Ships)
-    if ((argc - optind) != 6 || has_invalid_option) usage();
+    if ((argc - optind) != 6 || invopt) usage();
 
     for (int i = 0; i < (argc - optind); i++) {
         char *arg = argv[optind + i];
@@ -339,6 +338,7 @@ static void parse_arguments(int argc, char **argv) {
             sprintf(error, "wrong syntax for ship coordinates: %s", arg);
             error_exit(error, true);
         }
+
         // ASCII value for A is 65 and for 0 it is 48 --> generate an int between 0 and 9
         int bx = arg[0] - 65, by = arg[1] - 48, sx = arg[2] - 65, sy = arg[3] - 48;
         if (bx < 0 || bx > 9 || by < 0 || by > 9 || sx < 0 || sx > 9 || sy < 0 || sy > 9) {
@@ -357,17 +357,13 @@ static void parse_arguments(int argc, char **argv) {
 }
 
 /**
- * Program entry point.
- * @brief This function takes care about parameters, creates the socket, waits for incoming connections and sends and receives
- * @details The main function performs argument parsing. Once a connection is established, the server sends and receives simultaneously.
- * @param argc The argument counter.
- * @param argv The argument vector.
- * @return Returns EXIT_SUCCESS on success, 2 on parity error, 3 on invalid coordinates and 1 otherwise
+ * Starts client handshake
+ *
+ * @brief Listens to connection and accepts it, once there is one available
+ * @details Golbal variables: ai, sockfd, connfd
+ * @param port Port to bind the socket on
  */
-int main(int argc, char *argv[]) {
-    // This also handles setting pgm_name
-    parse_arguments(argc, argv);
-
+static void open_connection_and_listen(char **port) {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -375,7 +371,7 @@ int main(int argc, char *argv[]) {
     hints.ai_flags = AI_PASSIVE;
 
     // Returns 0 or error code but does not set errno
-    int res = getaddrinfo(NULL, port, &hints, &ai);
+    int res = getaddrinfo(NULL, *port, &hints, &ai);
     if (res != 0) error_exit((char *) gai_strerror(res), false);
 
     sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
@@ -388,13 +384,13 @@ int main(int argc, char *argv[]) {
      */
     int val = 1;
     res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof val);
-    if (res) error_exit(strerror(errno), false);
+    if (res < 0) error_exit(strerror(errno), false);
 
     res = bind(sockfd, ai->ai_addr, ai->ai_addrlen);
-    if (res) error_exit(strerror(errno), false);
+    if (res < 0) error_exit(strerror(errno), false);
 
     res = listen(sockfd, 1);
-    if (res) error_exit(strerror(errno), false);
+    if (res < 0) error_exit(strerror(errno), false);
 
     printf("[%s] Server is bound to port. Waiting for incoming connections...\n", pgm_name);
 
@@ -402,22 +398,78 @@ int main(int argc, char *argv[]) {
     if (connfd < 0) error_exit(strerror(errno), false);
 
     printf("[%s] Connection established.\n", pgm_name);
+}
+
+/**
+ * Parses the given number on bit level to generate the x and y value
+ *
+ * @brief Parses the given buffer
+ * @param buffer The buffer to parse
+ * @param x Pointer to the x value
+ * @param y Pointer to the y value
+ * @return The buffer's parity bit
+ */
+static uint8_t parse_request(uint8_t buffer, uint8_t *x, uint8_t *y) {
+    uint8_t coords = (uint8_t) (buffer & 127); // mask = 0111 1111
+    *x = (uint8_t) (coords % 10);
+    *y = (uint8_t) (coords / 10);
+    return calculate_parity(buffer, 7);
+}
+
+/**
+ * Takes a status and hit value and saves it to the response pointer
+ *
+ * @brief Converts the given input to a response value
+ * @param status Status value
+ * @param hit Hit value
+ * @param response Pointer to response
+ */
+static void assemble_response(uint8_t status, uint8_t hit, uint8_t *response) {
+    *response = (uint8_t) ((status << 2) | hit);
+}
+
+/**
+ * Checks if the given coords are within bounds
+ *
+ * @brief Check if x and y are within 0 and MAP_SIZE -1
+ * @param x The x value
+ * @param y The y value
+ * @return true, if the coords are valid. false otherwise
+ */
+static bool coords_valid(uint8_t x, uint8_t y) {
+    uint8_t max = MAP_SIZE - 1;
+    return x >= 0 && x <= max && y >= 0 && y <= max;
+}
+
+/**
+ * Program entry point.
+ * @brief This function takes care about parameters, creates the socket, waits for incoming connections and sends and receives
+ * @details The main function performs argument parsing. Once a connection is established, the server sends and receives simultaneously.
+ * @param argc The argument counter.
+ * @param argv The argument vector.
+ * @return Returns EXIT_SUCCESS on success, 2 on parity error, 3 on invalid coordinates and 1 otherwise
+ */
+int main(int argc, char *argv[]) {
+    // Parse arguments
+    char *port = DEFAULT_PORT;
+    parse_arguments(argc, argv, &port);
+
+    // Establish the connection
+    ssize_t size;
+    uint8_t buffer;
+    open_connection_and_listen(&port);
 
     int result = EXIT_SUCCESS;
+
     bool game_over = false;
-    ssize_t recv_size, send_size;
     int rounds = 1;
-    char buffer;
 
-    while (!game_over && (recv_size = recv(connfd, &buffer, sizeof(buffer), 0)) > 0) {
-        int hit = 0, status = 0;
-        // even parity --> 0
-        if (calculate_parity(buffer, 7) == 0) {
-            int c = buffer & 127; // mask = 0111 1111
-            // int p = (in & 128) >> 7; // mask = 1000 0000; after shift 7 right = 1 / 0
-            int x = c % 10, y = c / 10;
+    while (!game_over && (size = recv(connfd, &buffer, sizeof(buffer), 0)) > 0) {
+        uint8_t hit = 0, status = 0, x, y;
 
-            if (x >= 0 && x <= 9 && y >= 0 && y <= 9) {
+        // check for even parity --> 0
+        if (parse_request(buffer, &x, &y) == 0) {
+            if (coords_valid(x, y)) {
                 coord_t attempt = {x, y};
                 hit = shoot(&attempt);
                 if (hit == 3) {
@@ -444,15 +496,16 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "[%s] parity error\n", pgm_name);
         }
 
-        uint8_t out = (uint8_t) ((status << 2) | hit);
-        send_size = send(connfd, &out, sizeof(out), 0);
-        if (send_size < 0) error_exit(strerror(errno), false);
+        uint8_t response;
+        assemble_response(status, hit, &response);
+        size = send(connfd, &response, sizeof(response), 0);
+        if (size < 0) error_exit(strerror(errno), false);
 
         rounds++;
     }
 
     // 0 == orderly shutdown; -1 == error
-    if (recv_size < 0) error_exit(strerror(errno), false);
+    if (size < 0) error_exit(strerror(errno), false);
 
     clean_up();
     return result;

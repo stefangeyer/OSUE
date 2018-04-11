@@ -90,7 +90,7 @@ static void parse_arguments(int argc, char *argv[], char **host, char **port) {
 
     int c;
     int opt_h = 0, opt_p = 0;
-    bool has_invalid_option = false;
+    bool invopt = false;
 
     // 3rd param: optstring defines legitimate option characters.
     // Appending : to an argument character implicates that the option requires an argument
@@ -107,7 +107,7 @@ static void parse_arguments(int argc, char *argv[], char **host, char **port) {
                 *port = optarg;
                 break;
             case '?':
-                has_invalid_option = true;
+                invopt = true;
                 break;
             default:
                 assert(0);
@@ -119,7 +119,7 @@ static void parse_arguments(int argc, char *argv[], char **host, char **port) {
 
     // Check whether there are the correct amount of positional arguments
     // or an invalid option were supplied.
-    if ((argc - optind) > 0 || has_invalid_option) usage();
+    if ((argc - optind) > 0 || invopt) usage();
 }
 
 /**

@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
     // 0 >= orderly shutdown; -1 == error
     if (size < 0) error_exit(strerror(errno), false);
 
-    print_map(map); // DEBUG ONLY
+    // print_map(map); // DEBUG ONLY
 
     clean_up();
     return result;

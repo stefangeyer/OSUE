@@ -114,7 +114,6 @@ static void clean_up(void) {
  */
 static void error_exit(char *message, bool show_usage) {
     fprintf(stderr, "[%s] ERROR: %s\n", pgm_name, message);
-    clean_up();
     if (show_usage) usage();
     else exit(EXIT_FAILURE);
 }
@@ -539,6 +538,5 @@ int main(int argc, char *argv[]) {
     // 0 == orderly shutdown; -1 == error
     if (size < 0) error_exit(strerror(errno), false);
 
-    clean_up();
     return result;
 }

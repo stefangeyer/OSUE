@@ -64,7 +64,7 @@ typedef struct ship {
 // Static variables for things you might want to access from several functions:
 static char *pgm_name; /**< The program name */
 
-static ship_t *head; /**< The head element of the ship list. (Linked list structure) */
+static ship_t *head = NULL; /**< The head element of the ship list. (Linked list structure) */
 static int count_len2 = SHIP_CNT_LEN2;  /**< keeps track of the amount of ships with length 2 */
 static int count_len3 = SHIP_CNT_LEN3;  /**< keeps track of the amount of ships with length 3 */
 static int count_len4 = SHIP_CNT_LEN4;  /**< keeps track of the amount of ships with length 4 */
@@ -73,6 +73,8 @@ static int count_len4 = SHIP_CNT_LEN4;  /**< keeps track of the amount of ships 
 static struct addrinfo *ai = NULL;      /**< addrinfo struct */
 static int sockfd = -1;                 /**< socket file descriptor */
 static int connfd = -1;                 /**< connection file descriptor */
+
+volatile sig_atomic_t quit = 0; /**< toggled by signal handler */
 
 /**
  * Mandatory usage function.
@@ -99,9 +101,9 @@ static void clean_up(void) {
         free(curr);
     }
 
-    close(connfd);
-    close(sockfd);
-    freeaddrinfo(ai);
+    if (connfd >= 0) close(connfd);
+    if (connfd >= 0) (sockfd);
+    if (ai != NULL) freeaddrinfo(ai);
 }
 
 /**
@@ -117,6 +119,30 @@ static void error_exit(char *message, bool show_usage) {
     clean_up();
     if (show_usage) usage();
     else exit(EXIT_FAILURE);
+}
+
+/**
+ * The callback function for the signal handler.
+ * Stops the main loop.
+ *
+ * @brief Handles a signal
+ * @param signal The signal to handle
+ */
+static void handle_signal(int signal) {
+    quit = 1;
+}
+
+/**
+ * @brief Sets up the signal handler
+ * @details Handle signals SIGINT and SIGTERM
+ */
+static void create_signal_handler() {
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+
+    sa.sa_handler = handle_signal;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
 }
 
 /**
@@ -178,7 +204,8 @@ static ship_t *create_ship(coord_t *bow, coord_t *stern) {
  * Checks whether this ship can be added to the map or not.
  * Must be called before adding the ship.
  *
- * @param ship
+ * @brief Validate the given ship
+ * @param ship The ship to validate
  */
 static void validate_ship(ship_t *ship) {
     char error[50];
@@ -495,6 +522,13 @@ int main(int argc, char *argv[]) {
             result = status;
             game_over = true;
             fprintf(stderr, "[%s] parity error\n", pgm_name);
+        }
+
+        // signal handler hook
+        if (quit) {
+            game_over = true;
+            status = 1;
+            hit = 0;
         }
 
         uint8_t response;

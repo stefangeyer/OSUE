@@ -148,7 +148,7 @@ static void parse_response(uint8_t buffer, uint8_t *hit, uint8_t *status) {
 static void assemble_request(uint8_t x, uint8_t y, uint16_t *request) {
     // using schema: p000xxxxxxyyyyyy
     // bits 0 - 6
-    uint8_t coord = (x << 6) | y;
+    uint16_t coord = (x << 6) | y;
     // bit 15
     uint8_t parity = calculate_parity(coord, 14);
     // assemble

@@ -35,6 +35,7 @@
 #define SQUARE_EMPTY    2 /**< map info: a shot at the square was a miss (thus it is empty) */
 
 #include <stdint.h>
+#include <stdio.h>
 
 /**
  * @brief Print a map showing the squares where ships have been hit.
@@ -79,9 +80,7 @@ static inline void print_map(uint8_t map[MAP_SIZE][MAP_SIZE]) {
  * @param b second number
  * @return the smaller number
  */
-int max(int a, int b) {
-    return a > b ? a : b;
-}
+int max(int a, int b);
 
 /**
  * Returns the maximum of two ints
@@ -91,9 +90,7 @@ int max(int a, int b) {
  * @param b second number
  * @return the bigger number
  */
-int min(int a, int b) {
-    return a < b ? a : b;
-}
+int min(int a, int b);
 
 /**
  * XORs a certain amount of bits from the given number and generates a parity bit for even parity.
@@ -103,16 +100,6 @@ int min(int a, int b) {
  * @param limit the amount of bits
  * @return the parity bit (0 or 1)
  */
-uint8_t calculate_parity(int x, int limit) {
-    uint8_t parity = 0;
-
-    // xor every bit for 0 to limit (incl.)
-    for (int i = 0; i <= limit; i++) {
-        parity ^= x & 1;
-        x >>= 1;
-    }
-
-    return parity;
-}
+uint8_t calculate_parity(int x, int limit);
 
 #endif // COMMON_H

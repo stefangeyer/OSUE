@@ -145,13 +145,14 @@ static void parse_response(uint8_t buffer, uint8_t *hit, uint8_t *status) {
  * @param y The y value
  * @param request Pointer to the request data
  */
-static void assemble_request(uint8_t x, uint8_t y, uint8_t *request) {
+static void assemble_request(uint8_t x, uint8_t y, uint16_t *request) {
+    // using schema: p000xxxxxxyyyyyy
     // bits 0 - 6
-    uint8_t coord = (uint8_t) (x + y * 10);
-    // bit 7
-    uint8_t parity = calculate_parity(coord, 6);
+    uint8_t coord = (x << 6) | y;
+    // bit 15
+    uint8_t parity = calculate_parity(coord, 14);
     // assemble
-    *request = (coord | (parity << 7));
+    *request = (parity << 15) | coord;
 }
 
 /**
@@ -163,9 +164,9 @@ static void assemble_request(uint8_t x, uint8_t y, uint8_t *request) {
  * @param y The y value
  */
 static void shoot(uint8_t x, uint8_t y) {
-    uint8_t result;
-    assemble_request(x, y, &result);
-    ssize_t size = send(sockfd, &result, sizeof(result), 0);
+    uint16_t request;
+    assemble_request(x, y, &request);
+    ssize_t size = send(sockfd, &request, sizeof(request), 0);
     if (size < 0) error_exit(strerror(errno), false);
 }
 

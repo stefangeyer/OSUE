@@ -409,11 +409,11 @@ static void open_connection_and_listen(char **port) {
  * @param y Pointer to the y value
  * @return The buffer's parity bit
  */
-static uint8_t parse_request(uint8_t buffer, uint8_t *x, uint8_t *y) {
-    uint8_t coords = (uint8_t) (buffer & 127); // mask = 0111 1111
-    *x = (uint8_t) (coords % 10);
-    *y = (uint8_t) (coords / 10);
-    return calculate_parity(buffer, 7);
+static uint8_t parse_request(uint16_t buffer, uint8_t *x, uint8_t *y) {
+    *x = (uint8_t) (buffer & 4032) >> 6; // Mask bits 7 - 11 and shift them
+    *y = (uint8_t) (buffer & 63); // Mask bits 0 - 6
+    uint8_t p = (uint8_t) (buffer & 32768) >> 15; // Mask bit 15 for parity and shift it
+    return p;
 }
 
 /**
@@ -456,7 +456,7 @@ int main(int argc, char *argv[]) {
 
     // Establish the connection
     ssize_t size;
-    uint8_t buffer;
+    uint16_t buffer;
     open_connection_and_listen(&port);
 
     int result = EXIT_SUCCESS;

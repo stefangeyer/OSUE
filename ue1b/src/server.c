@@ -74,8 +74,6 @@ static struct addrinfo *ai = NULL;      /**< addrinfo struct */
 static int sockfd = -1;                 /**< socket file descriptor */
 static int connfd = -1;                 /**< connection file descriptor */
 
-volatile sig_atomic_t quit = 0; /**< toggled by signal handler */
-
 /**
  * Mandatory usage function.
  * @brief This function writes helpful usage information about the program to stderr.
@@ -102,7 +100,7 @@ static void clean_up(void) {
     }
 
     if (connfd >= 0) close(connfd);
-    if (connfd >= 0) (sockfd);
+    if (connfd >= 0) close(sockfd);
     if (ai != NULL) freeaddrinfo(ai);
 }
 
@@ -129,7 +127,7 @@ static void error_exit(char *message, bool show_usage) {
  * @param signal The signal to handle
  */
 static void handle_signal(int signal) {
-    quit = 1;
+    error_exit("Received signal. Aborting", false);
 }
 
 /**
@@ -482,6 +480,12 @@ int main(int argc, char *argv[]) {
     char *port = DEFAULT_PORT;
     parse_arguments(argc, argv, &port);
 
+    if (atexit(clean_up) != 0) {
+        error_exit("Cannot define cleanup function", false);
+    }
+
+    create_signal_handler();
+
     // Establish the connection
     ssize_t size;
     uint16_t buffer;
@@ -522,13 +526,6 @@ int main(int argc, char *argv[]) {
             result = status;
             game_over = true;
             fprintf(stderr, "[%s] parity error\n", pgm_name);
-        }
-
-        // signal handler hook
-        if (quit) {
-            game_over = true;
-            status = 1;
-            hit = 0;
         }
 
         uint8_t response;

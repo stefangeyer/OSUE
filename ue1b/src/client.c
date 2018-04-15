@@ -166,6 +166,13 @@ static void assemble_request(uint8_t x, uint8_t y, uint16_t *request) {
 static void shoot(uint8_t x, uint8_t y) {
     uint16_t request;
     assemble_request(x, y, &request);
+    /*
+     * When sending more than one byte over a socket they might not always be received in the same order.
+     * This depends on the processor's byte order. Different processors might have different byte orders and might therefore
+     * receive a multi-byte request in a different order. To avoid any conflicts, the bytes should be sent one by one.
+     * Since the server and client are running on the same machine though, the byte order is definitely the same and this problem
+     * may be ignored in our case (discussed with Michael Platzer on the TUWEL forum)
+     */
     ssize_t size = send(sockfd, &request, sizeof(request), 0);
     if (size < 0) error_exit(strerror(errno), false);
 }

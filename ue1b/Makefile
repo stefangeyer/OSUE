@@ -9,6 +9,8 @@ DOCDIR = docs
 
 # no need to include headers for compilation, as they are in the same directory as the source files
 HEADERS = common.h
+COMMON_SOURCES = common.c
+COMMON_OBJECTS = common.o
 CLIENT_SOURCES = client.c
 CLIENT_OBJECTS = client.o
 SERVER_SOURCES = server.c
@@ -25,12 +27,12 @@ docs:
 
 # PHONY so we can override the tgz when needed
 delivery:
-	tar -cvzf $@.tgz Makefile Doxyfile $(SOURCEDIR)/$(CLIENT_SOURCES) $(SOURCEDIR)/$(SERVER_SOURCES) $(SOURCEDIR)/$(HEADERS)
+	tar -cvzf $@.tgz Makefile Doxyfile $(SOURCEDIR)
 
-$(BUILDDIR)/$(CLIENT_EXECUTABLE): $(BUILDDIR)/$(CLIENT_OBJECTS)
+$(BUILDDIR)/$(CLIENT_EXECUTABLE): $(BUILDDIR)/$(CLIENT_OBJECTS) $(BUILDDIR)/$(COMMON_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-$(BUILDDIR)/$(SERVER_EXECUTABLE): $(BUILDDIR)/$(SERVER_OBJECTS)
+$(BUILDDIR)/$(SERVER_EXECUTABLE): $(BUILDDIR)/$(SERVER_OBJECTS) $(BUILDDIR)/$(COMMON_OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 $(BUILDDIR):
@@ -40,6 +42,9 @@ $(BUILDDIR)/$(CLIENT_OBJECTS): $(SOURCEDIR)/$(CLIENT_SOURCES)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(BUILDDIR)/$(SERVER_OBJECTS): $(SOURCEDIR)/$(SERVER_SOURCES)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(BUILDDIR)/$(COMMON_OBJECTS): $(SOURCEDIR)/$(COMMON_SOURCES)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:

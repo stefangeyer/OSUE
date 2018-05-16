@@ -13,9 +13,13 @@ static void tokenize(char *in, const char *delim, char out[][LINE_LENGTH], long 
 
 static void print_merge(char left[][LINE_LENGTH], long int llen, char right[][LINE_LENGTH], long int rlen);
 
-static char* read_pipe(int pipefd[]);
+static char *read_pipe(int pipefd[]);
+
+static void write_pipe(int pipefd[], char *out, size_t len);
 
 static void fork_recursive(int *pid, int *inpipefd, int *outpipefd);
+
+static void wait_child(int pid);
 
 void forksort(long int amount, char lines[][LINE_LENGTH]) {
     if (amount == 1) {
@@ -24,11 +28,11 @@ void forksort(long int amount, char lines[][LINE_LENGTH]) {
     }
 
     long int mid = amount / 2 + (amount % 2), lamount = mid, ramount = amount - mid;
-    int linpipefd[2], loutpipefd[2], rinpipefd[2], routpipefd[2], status, rcounter = 1;
+    int linpipefd[2], loutpipefd[2], rinpipefd[2], routpipefd[2];
     pid_t lpid, rpid;
     char number[32], *delim = "\n";
-    char buffer[BUFFER_SIZE], *lresult = NULL, *rresult = NULL;
-    char *ltoken, *rtoken, llines[lamount][LINE_LENGTH], rlines[ramount][LINE_LENGTH];
+    char *lresult = NULL, *rresult = NULL;
+    char llines[lamount][LINE_LENGTH], rlines[ramount][LINE_LENGTH];
 
     // Setup pipes
     if (pipe(linpipefd) == -1 || pipe(loutpipefd) == -1 ||
@@ -41,8 +45,6 @@ void forksort(long int amount, char lines[][LINE_LENGTH]) {
     // Fork right process
     fork_recursive(&rpid, rinpipefd, routpipefd);
 
-    // Parent
-
     // Close unused pipe ends
     close(linpipefd[0]);
     close(loutpipefd[1]);
@@ -51,45 +53,26 @@ void forksort(long int amount, char lines[][LINE_LENGTH]) {
 
     // Write line amount to left pipe
     int b = snprintf(number, 32, "%ld\n", mid);
-    if (write(linpipefd[1], number, (size_t) b) == -1) {
-        error_exit("Cannot write line amount to left child");
-    }
+    write_pipe(linpipefd, number, (size_t) b);
 
     // Write line amount to right pipe
     b = snprintf(number, 32, "%ld\n", amount - mid);
-    if (write(rinpipefd[1], number, (size_t) b) == -1) {
-        error_exit("Cannot write line amount to right child");
-    }
+    write_pipe(rinpipefd, number, (size_t) b);
 
     // Write the first half of lines to the left pipe and the second to the right pipe
-    for (long int i = 0; i < amount; i++) {
-        int fd;
-        if (i < mid) fd = linpipefd[1];
-        else fd = rinpipefd[1];
+    for (long int i = 0; i < lamount; i++) {
+        char *line = lines[i];
+        write_pipe(linpipefd, line, strlen(line));
+    }
 
-        ssize_t written = 0;
-        if ((written = write(fd, lines[i], strlen(lines[i]))) == -1) {
-            error_exit("Cannot write line to child");
-        }
-        //fprintf(stderr, "Wrote line to pipe: fd: %d, bytes: %ld, line: %s", fd, written, lines[i]);
-        //write(fd, delim, 2);
+    for (long int i = 0; i < ramount; i++) {
+        char *line = lines[mid + i];
+        write_pipe(rinpipefd, line, strlen(line));
     }
 
     // Wait for children
-
-    if (waitpid(lpid, &status, 0) == -1) {
-        error_exit("Cannot wait for left child");
-    }
-
-    // Check if child left child exited successful
-    if (WEXITSTATUS(status) != EXIT_SUCCESS) error_exit("Left child exited with failure code");
-
-    if (waitpid(rpid, &status, 0) == -1) {
-        error_exit("Cannot wait for right child");
-    }
-
-    // Check if child left child exited successful
-    if (WEXITSTATUS(status) != EXIT_SUCCESS) error_exit("Right child exited with failure code");
+    wait_child(lpid);
+    wait_child(rpid);
 
     // Read result of left child into a single string
     lresult = read_pipe(loutpipefd);
@@ -133,7 +116,7 @@ static void print_merge(char left[][LINE_LENGTH], long int llen, char right[][LI
     }
 
     // Copy remaining left elements if there are any
-    for (;i < llen; i++) {
+    for (; i < llen; i++) {
         printf("%s\n", left[i]);
     }
 
@@ -143,7 +126,7 @@ static void print_merge(char left[][LINE_LENGTH], long int llen, char right[][LI
     }
 }
 
-static char* read_pipe(int pipefd[]) {
+static char *read_pipe(int pipefd[]) {
     char buffer[BUFFER_SIZE], *result = NULL;
     int counter = 1;
 
@@ -157,6 +140,15 @@ static char* read_pipe(int pipefd[]) {
         if (first) strcpy(result, buffer);
         else strcat(result, buffer);
     }
+
+    return result;
+}
+
+static void write_pipe(int pipefd[], char *out, size_t len) {
+    ssize_t written = 0;
+    if ((written = write(pipefd[1], out, len)) == -1) {
+        error_exit("Cannot write line to child");
+    }
 }
 
 static void fork_recursive(int *pid, int *inpipefd, int *outpipefd) {
@@ -165,7 +157,6 @@ static void fork_recursive(int *pid, int *inpipefd, int *outpipefd) {
 
     if (*pid == 0) {
         // Child process
-
         close(inpipefd[1]); // Only read from input pipe
         dup2(inpipefd[0], STDIN_FILENO); // Redirect read end to stdin
 
@@ -178,4 +169,15 @@ static void fork_recursive(int *pid, int *inpipefd, int *outpipefd) {
         // We only get to this point of exec fails
         error_exit("Child's exec failed");
     }
+}
+
+static void wait_child(int pid) {
+    int status;
+
+    if (waitpid(pid, &status, 0) == -1) {
+        error_exit("Cannot wait for child");
+    }
+
+    // Check if child exited successful
+    if (WEXITSTATUS(status) != EXIT_SUCCESS) error_exit("Child exited with failure code");
 }

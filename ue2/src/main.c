@@ -92,13 +92,7 @@ void read_line(char **lineptr) {
         error_exit("Cannot read line");
     }
 
-    fprintf(stderr, "r %s", *lineptr);
-    //fprintf(stderr, "pid %d r %s", getpid(), *lineptr);
-
     if (strlen(*lineptr) == 0) {
         error_exit("Read empty line");
     }
-
-    // Remove newline
-    //(*lineptr)[strcspn(*lineptr, "\n")] = 0;
 }

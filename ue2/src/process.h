@@ -3,6 +3,6 @@
 
 #include "main.h"
 
-void forksort(long int amount, char lines[][LINE_LENGTH], char *pgm_name);
+void forksort(long int amount, char lines[][LINE_LENGTH]);
 
 #endif //UE2_PROCESS_H

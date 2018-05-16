@@ -3,6 +3,8 @@
 
 #define LINE_LENGTH (62)
 
+extern char *pgm_name;
+
 void usage(void);
 
 void clean_up();

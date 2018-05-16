@@ -9,7 +9,7 @@ DOCDIR = docs
 
 # Cannot mix implicit and static pattern rules (static used for OBJECTS) --> Cannot use $(SOURCEDIR)/%.c
 
-SOURCES = $(wildcard $(SOURCEDIR)/*)
+SOURCES = $(wildcard $(SOURCEDIR)/*.c)
 # HEADERS = $(wildcard $(SOURCEDIR)/*.h)
 
 # $(patsubst pattern,replacement,text)

@@ -1,3 +1,13 @@
+/**
+ * @file process.c
+ * @author Stefan Geyer <e1625718 at student.tuwien.ac.at>
+ * @date 16.05.2018
+ *
+ * @brief Subprocess module.
+ *
+ * This module defines functions that require child processes in order to work as intended and other helper functions.
+ **/
+
 #include <stdio.h>
 #include <sched.h>
 #include <unistd.h>
@@ -9,19 +19,79 @@
 
 #define BUFFER_SIZE (512)
 
+/**
+ * Tokenize string
+ *
+ * @brief Splits in up into at most len parts and puts them into out
+ * @details If there are more tokens than len, the rest will be ignored
+ *
+ * @param in The string to split
+ * @param delim The delimiter to split at
+ * @param out The output array
+ * @param len The max amount of elements
+ */
 static void tokenize(char *in, const char *delim, char out[][LINE_LENGTH], long int len);
 
+/**
+ * Mergesort merge
+ *
+ * @brief Performs the merging and prints the result to stdout
+ * @details This is a classic mergesort merge implementation
+ *
+ * @param left Left partial array
+ * @param llen Length of left partial array
+ * @param right Right partial array
+ * @param rlen Length of right partial array
+ */
 static void print_merge(char left[][LINE_LENGTH], long int llen, char right[][LINE_LENGTH], long int rlen);
 
+/**
+ * Read content from pipe
+ *
+ * @brief Read pipe content into a single string and return
+ * @details The result is malloced and needs to be freed manually
+ *
+ * @param pipefd Rhe pipe to read from
+ * @return The read string
+ */
 static char *read_pipe(int pipefd[]);
 
+/**
+ * Write content to pipe
+ *
+ * @brief Write up to len characters from out to the given pipe
+ * @details Exits if write fails
+ *
+ * @param pipefd Pipe to write to
+ * @param out The string to write
+ * @param len The length of the string to write
+ */
 static void write_pipe(int pipefd[], char *out, size_t len);
 
+/**
+ * Start recursive call to own executable
+ *
+ * @brief Fork process and execute program recursively
+ * @details Child process calls this executable using execlp and pipes stdin and stdout
+ *
+ * @param pid The childs pid will be stored here
+ * @param inpipefd The opened input pipe
+ * @param outpipefd The opened output pipe
+ */
 static void fork_recursive(int *pid, int *inpipefd, int *outpipefd);
 
+/**
+ * Wait for child process
+ *
+ * @brief Waits for child with given pid and checks the result status
+ * @details Exits on failure status code
+ *
+ * @param pid The pid to wait for
+ */
 static void wait_child(int pid);
 
 void forksort(long int amount, char lines[][LINE_LENGTH]) {
+    // Termination condition
     if (amount == 1) {
         printf("%s\n", lines[0]);
         return;
@@ -145,8 +215,7 @@ static char *read_pipe(int pipefd[]) {
 }
 
 static void write_pipe(int pipefd[], char *out, size_t len) {
-    ssize_t written = 0;
-    if ((written = write(pipefd[1], out, len)) == -1) {
+    if ((write(pipefd[1], out, len)) == -1) {
         error_exit("Cannot write line to child");
     }
 }

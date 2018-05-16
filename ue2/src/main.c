@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <stdbool.h>
-#include <zconf.h>
 #include "main.h"
 #include "process.h"
 

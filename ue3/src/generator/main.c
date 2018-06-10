@@ -1,3 +1,13 @@
+/**
+ * @file main.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 10.06.2016
+ *
+ * @brief Main program module.
+ *
+ * Generator code. Parses arguments and calculates solutions.
+ **/
+
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,9 +65,6 @@ int main(int argc, char *argv[]) {
         // Find a valid solution
         while (generate_solution(graph, &solution) < 0);
 
-        // Before writing, check if supervisor has already shut down
-        if (buffer->quit) break;
-
         // wait if there is no space left
         if (sem_wait(semaphores->free) == -1) {
             // interrupted by system call?
@@ -70,6 +77,11 @@ int main(int argc, char *argv[]) {
             // interrupted by system call?
             if (errno == EINTR) continue;
             error_exit("Semaphore wait failed");
+        }
+
+        // Before writing, check if supervisor has already shut down
+        if (buffer->quit) {
+            quit = 1;
         }
 
         // dont use mod but bitmask. this avoids issues with overflows of the counter

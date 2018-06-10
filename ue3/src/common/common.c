@@ -5,7 +5,7 @@
  *
  * @brief Common program module.
  *
- * This file implements all function used by server AND client
+ * This file implements all function used by supervisor AND generator
  **/
 
 #include <fcntl.h>
@@ -62,7 +62,7 @@ circular_buffer_t *memory_open(void) {
     /* create and/or open shared memory object */
     int shmfd = shm_open(SHM_NAME, O_RDWR, 0);
     if (shmfd == -1) {
-        error_exit("Cannot open shared memory. Has the server been started yet?");
+        error_exit("Cannot open shared memory. Has the supervisor been started yet?");
     }
 
     /* map shared memory object */
@@ -86,16 +86,6 @@ void memory_close(circular_buffer_t *shared) {
         fprintf(stderr, "Cannot unmap shared memory"); // Dont error_exit, since this is will be called with atexit
     }
 }
-
-//void print_memory(circular_buffer_t *shared) {
-//    printf("server_available: %d\n"
-//                   "username: %s\n"
-//                   "password: %s\n"
-//                   "secret: %s\n"
-//                   "session: %s\n"
-//                   "state: %d\n",
-//           shared->server_available, shared->username, shared->password, shared->secret, shared->session, shared->state);
-//}
 
 semaphores_t *semaphores_create(void) {
     semaphores_t *semaphores = malloc(sizeof(semaphores_t));

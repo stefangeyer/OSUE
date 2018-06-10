@@ -24,7 +24,7 @@ static void parse_edge(char *input, edge_t *edge);
 
 static int parse_int(char *string);
 
-static int *add_vertex(int vertex, int *vertices, size_t *vertc);
+static void add_vertex(int vertex, int *vertices, size_t *vertc);
 
 static int generate_solution(graph_t *graph, solution_t *solution);
 
@@ -89,23 +89,8 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-/*static void buffer_write(solution_t *solution) {
-    // wait if there is no space left
-    sem_wait(semaphores->free);
-
-    // request synced write access
-    sem_wait(semaphores->mutex);
-    // dont use mod but bitmask. this avoids issues with overflows of the counter
-    buffer->solutions[buffer->writepos & (BUFFER_SIZE - 1)] = *solution;
-    buffer->writepos++;
-    sem_post(semaphores->mutex);
-
-    // increment the count of the number of items
-    sem_post(semaphores->used);
-}*/
-
 static int generate_solution(graph_t *graph, solution_t *solution) {
-    int *colors = NULL;
+    int *colors;
     int max = -1;
     int pos = 0;
 
@@ -117,25 +102,18 @@ static int generate_solution(graph_t *graph, solution_t *solution) {
         if (vertex > max) {
             max = vertex;
         }
-        if (vertex == max) {
-            colors = realloc(colors, sizeof(int) * (max + 1));
-        }
-        if (colors == NULL) {
-            error_exit("Cannot allocate memory");
-        }
-
-        colors[vertex] = rand() % 3; // 0, 1 or 2 are the 3 colors
     }
 
-    /*printf("Colors:\n");
+    colors = malloc(sizeof(int) * (max + 1));
+
+    if (colors == NULL) {
+        error_exit("Cannot allocate memory");
+    }
 
     for (int i = 0; i < graph->vertc; i++) {
         int vertex = graph->vertices[i];
-        int color = colors[vertex];
-        printf("v: %d, c: %d\n", vertex, color);
+        colors[vertex] = rand() % 3; // 0, 1 or 2 are the 3 colors
     }
-
-    printf("Colors done\n");*/
 
     for (int i = 0; i < graph->edgec; i++) {
         // Only need solutions with less than 9 edges
@@ -165,7 +143,7 @@ static graph_t *parse_arguments(int argc, char *argv[]) {
 
     size_t vertc = 0, edgec = (size_t) posc;
     edge_t *edges = malloc(sizeof(edge_t) * posc);
-    int *vertices = malloc(sizeof(int) * posc);
+    int *vertices = malloc(sizeof(int) * 2 * posc); // there are at max 2 * edges vertices
     graph_t *graph = malloc(sizeof(graph_t));
     if (edges == NULL || vertices == NULL || graph == NULL) error_exit("Cannot allocate memory");
 
@@ -173,8 +151,9 @@ static graph_t *parse_arguments(int argc, char *argv[]) {
         edge_t edge;
         parse_edge(argv[optind + i], &edge);
         edges[i] = edge;
-        vertices = add_vertex(edge.u, vertices, &vertc);
-        vertices = add_vertex(edge.v, vertices, &vertc);
+
+        add_vertex(edge.u, vertices, &vertc);
+        add_vertex(edge.v, vertices, &vertc);
     }
 
     graph->vertices = vertices;
@@ -202,15 +181,13 @@ static void parse_edge(char *input, edge_t *edge) {
     edge->v = v;
 }
 
-static int *add_vertex(int vertex, int *vertices, size_t *vertc) {
+static void add_vertex(int vertex, int *vertices, size_t *vertc) {
     for (int i = 0; i < *vertc; i++) {
-        if (vertices[i] == vertex) return vertices;
+        if (vertices[i] == vertex) return;
     }
 
-    int *new_vertices = realloc(vertices, *vertc + 1);
-    new_vertices[*vertc] = vertex;
+    vertices[*vertc] = vertex;
     *vertc = *vertc + 1;
-    return new_vertices;
 }
 
 static int parse_int(char *string) {

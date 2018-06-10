@@ -25,16 +25,26 @@
 #define SEM_MUTEX "/osue_3clr_mutex" /**< Name of mutex semaphore */
 
 #define SOLUTION_MAX_EDGES (8) /**< Maximal number of edges in a solution */
-#define BUFFER_SIZE (16)
+#define BUFFER_SIZE (16) /** Buffer size */
 
+/**
+ * @struct Edge struct
+ * @brief Two vertices combined
+ * @details Typedef as edge_t
+ */
 typedef struct edge {
-    int u;
-    int v;
+    int u; /** First vertex */
+    int v; /** Second vertex */
 } edge_t;
 
+/**
+ * @struct Solution struct
+ * @brief Struct that contains a solution
+ * @details Typedef as solution_t
+ */
 typedef struct solution {
-    size_t size;
-    edge_t edges[SOLUTION_MAX_EDGES];
+    size_t size; /** Amount of vertices */
+    edge_t edges[SOLUTION_MAX_EDGES]; /** Vertices to remove */
 } solution_t;
 
 /**
@@ -43,11 +53,10 @@ typedef struct solution {
  * @details Typedef as circular_buffer_t
  */
 typedef struct circular_buffer {
-    bool quit;
-    int readpos;
-    int writepos;
-    solution_t solutions[BUFFER_SIZE];
-
+    bool quit; /** Quit flag */
+    int readpos; /** The position to read from */
+    int writepos; /** To position to write to */
+    solution_t solutions[BUFFER_SIZE]; /** The solution array */
 } circular_buffer_t;
 
 /**

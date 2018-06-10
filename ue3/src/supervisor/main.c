@@ -1,3 +1,13 @@
+/**
+ * @file main.c
+ * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
+ * @date 10.06.2018
+ *
+ * @brief Main program module for supervisors.
+ *
+ * Selects best result of generator solutions.
+ **/
+
 #include <signal.h>
 #include <memory.h>
 #include <stdlib.h>
@@ -12,9 +22,9 @@ static void handle_signal(int signal);
 
 static void clean_up(void);
 
-static circular_buffer_t *buffer;
-static semaphores_t *semaphores;
-volatile sig_atomic_t quit = 0;
+static circular_buffer_t *buffer; /** Shared memory buffer */
+static semaphores_t *semaphores; /** Semaphores */
+volatile sig_atomic_t quit = 0; /** Quit flag */
 
 int main(int argc, char *argv[]) {
     if (atexit(clean_up) != 0) {
@@ -80,15 +90,29 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
+/**
+ * @brief Cleans up existing resources
+ * @brief should be called with atexit
+ */
 static void clean_up(void) {
     memory_destroy(buffer);
     semaphores_destroy(semaphores);
 }
 
+/**
+ * The callback function for the signal handler.
+ * Stops the main loop.
+ *
+ * @param signal The signal to handle
+ */
 static void handle_signal(int signal) {
     quit = 1;
 }
 
+/**
+ * @brief Sets up the signal handler
+ * @details Handle signals SIGINT and SIGTERM
+ */
 static void create_signal_handler(void) {
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));

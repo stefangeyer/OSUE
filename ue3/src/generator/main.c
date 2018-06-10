@@ -1,9 +1,9 @@
 /**
  * @file main.c
  * @author Stefan Geyer <stefan.geyer@student.tuwien.ac.at>
- * @date 10.06.2016
+ * @date 10.06.2018
  *
- * @brief Main program module.
+ * @brief Main program module for generators.
  *
  * Generator code. Parses arguments and calculates solutions.
  **/
@@ -38,10 +38,10 @@ static void add_vertex(int vertex, int *vertices, size_t *vertc);
 
 static int generate_solution(graph_t *graph, solution_t *solution);
 
-static char *pgm_name;
-static circular_buffer_t *buffer;
-static semaphores_t *semaphores;
-volatile sig_atomic_t quit = 0;
+static char *pgm_name; /** Program name */
+static circular_buffer_t *buffer; /** Shared memory circular buffer */
+static semaphores_t *semaphores; /** Semaphores clustered together */
+volatile sig_atomic_t quit = 0; /** Quit flag */
 
 int main(int argc, char *argv[]) {
     // Seed for rand operation
@@ -101,6 +101,13 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
+/**
+ * @brief Generate a solution for the input graph
+ * @details Calculates colors for each vertex and revoces edges where both vertices have the same color
+ * @param graph The graph to find a solution for
+ * @param solution The solution
+ * @return Result code; -1 if the found solution has too many edges
+ */
 static int generate_solution(graph_t *graph, solution_t *solution) {
     int *colors;
     int max = -1;
@@ -145,6 +152,14 @@ static int generate_solution(graph_t *graph, solution_t *solution) {
     return 0;
 }
 
+/**
+ * @brief Takes the argument vector and parses the positional arguments and options
+ * @details Creates a graph instance from the given input
+ *
+ * @param argc The argument count
+ * @param argv The argument vector
+ * @return The created graph
+ */
 static graph_t *parse_arguments(int argc, char *argv[]) {
     pgm_name = argv[0];
 
@@ -176,6 +191,12 @@ static graph_t *parse_arguments(int argc, char *argv[]) {
     return graph;
 }
 
+/**
+ * @brief Parses an edge from an input string
+ * @details Uses the declared util functions
+ * @param input The string to parse
+ * @param edge The resulting edge
+ */
 static void parse_edge(char *input, edge_t *edge) {
     char *token, *delimiter = "-";
 
@@ -193,6 +214,13 @@ static void parse_edge(char *input, edge_t *edge) {
     edge->v = v;
 }
 
+/**
+ * @brief Adds a vertex to the vertices array but checks for duplicates
+ * @details Also increases the vertex counter
+ * @param vertex The vertex to add
+ * @param vertices The array
+ * @param vertc The counter
+ */
 static void add_vertex(int vertex, int *vertices, size_t *vertc) {
     for (int i = 0; i < *vertc; i++) {
         if (vertices[i] == vertex) return;
@@ -202,6 +230,12 @@ static void add_vertex(int vertex, int *vertices, size_t *vertc) {
     *vertc = *vertc + 1;
 }
 
+/**
+ * @brief Parses a number from a string
+ * @details Uses strtol
+ * @param string The string to parse
+ * @return The parsed number or -1 on error
+ */
 static int parse_int(char *string) {
     char *end;
     int result = (int) strtol(string, &end, 10);
@@ -209,6 +243,11 @@ static int parse_int(char *string) {
     return result;
 }
 
+/**
+ * Mandatory usage function.
+ * @brief This function writes helpful usage information about the program to stderr.
+ * @details global variables: pgm_name
+ */
 static void usage(void) {
     fprintf(stderr, "SYNOPSIS\n\t%s EDGE1...\nEXAMPLE\n\t%s 0-1 0-2 0-3 1-2 1-3 2-3\n", pgm_name, pgm_name);
     exit(EXIT_FAILURE);
@@ -220,10 +259,20 @@ static void free_graph(graph_t *graph) {
     free(graph);
 }
 
+/**
+ * The callback function for the signal handler.
+ * Stops the main loop.
+ *
+ * @param signal The signal to handle
+ */
 static void handle_signal(int signal) {
     quit = 1;
 }
 
+/**
+ * @brief Sets up the signal handler
+ * @details Handle signals SIGINT and SIGTERM
+ */
 static void create_signal_handler(void) {
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
@@ -233,6 +282,10 @@ static void create_signal_handler(void) {
     sigaction(SIGTERM, &sa, NULL);
 }
 
+/**
+ * @brief Cleans up existing resources
+ * @brief should be called with atexit
+ */
 static void clean_up(void) {
     memory_close(buffer);
     semaphores_close(semaphores);

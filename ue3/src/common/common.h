@@ -25,6 +25,17 @@
 #define SEM_MUTEX "/osue_3clr_mutex" /**< Name of mutex semaphore */
 
 #define SOLUTION_MAX_EDGES (8) /**< Maximal number of edges in a solution */
+#define BUFFER_SIZE (16)
+
+typedef struct edge {
+    int u;
+    int v;
+} edge_t;
+
+typedef struct solution {
+    size_t size;
+    edge_t edges[SOLUTION_MAX_EDGES];
+} solution_t;
 
 /**
  * @struct Shared memory struct
@@ -32,6 +43,10 @@
  * @details Typedef as circular_buffer_t
  */
 typedef struct circular_buffer {
+    bool quit;
+    int readpos;
+    int writepos;
+    solution_t solutions[BUFFER_SIZE];
 
 } circular_buffer_t;
 
@@ -45,16 +60,6 @@ typedef struct semaphores {
     sem_t *free; /**< free semaphore */
     sem_t *used; /**< used semaphore */
 } semaphores_t;
-
-typedef struct edge {
-    int u;
-    int v;
-} edge_t;
-
-typedef struct solution {
-    size_t size;
-    edge_t edges[SOLUTION_MAX_EDGES];
-} solution_t;
 
 /**
  * Creates and maps the shared memory used in this program

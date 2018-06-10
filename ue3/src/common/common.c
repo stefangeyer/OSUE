@@ -105,7 +105,7 @@ semaphores_t *semaphores_create(void) {
         return NULL;
     }
 
-    if ((semaphores->free = sem_open(SEM_FREE, O_CREAT, PERMISSION, 0)) == SEM_FAILED) {
+    if ((semaphores->free = sem_open(SEM_FREE, O_CREAT, PERMISSION, BUFFER_SIZE)) == SEM_FAILED) {
         error_exit("Cannot create free semaphore");
     }
 

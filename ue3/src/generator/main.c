@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <memory.h>
 #include <time.h>
+#include <errno.h>
 #include "main.h"
 
 static graph_t *parse_arguments(int argc, char *argv[]);
@@ -12,6 +13,10 @@ static graph_t *parse_arguments(int argc, char *argv[]);
 static void usage(void);
 
 static void free_graph(graph_t *graph);
+
+static void create_signal_handler(void);
+
+static void handle_signal(int signal);
 
 static void clean_up(void);
 
@@ -29,56 +34,82 @@ static semaphores_t *semaphores;
 volatile sig_atomic_t quit = 0;
 
 int main(int argc, char *argv[]) {
+    // Seed for rand operation
     srand(time(NULL));
+
     // This also handles setting pgm_name
     graph_t *graph = parse_arguments(argc, argv);
 
-    /*if (atexit(clean_up) != 0) {
+    if (atexit(clean_up) != 0) {
         error_exit("Cannot define cleanup function");
     }
 
+    create_signal_handler();
+
     buffer = memory_open();
-    semaphores = semaphores_open();*/
+    semaphores = semaphores_open();
 
-    printf("Vertices:\n");
+    while (!quit) {
+        solution_t solution;
 
-    for (int i = 0; i < graph->vertc; i++) {
-        printf("%d\n", graph->vertices[i]);
+        // Find a valid solution
+        while (generate_solution(graph, &solution) < 0);
+
+        // Before writing, check if supervisor has already shut down
+        if (buffer->quit) break;
+
+        // wait if there is no space left
+        if (sem_wait(semaphores->free) == -1) {
+            // interrupted by system call?
+            if (errno == EINTR) continue;
+            error_exit("Semaphore wait failed");
+        }
+
+        // request synced write access
+        if (sem_wait(semaphores->mutex) == -1) {
+            // interrupted by system call?
+            if (errno == EINTR) continue;
+            error_exit("Semaphore wait failed");
+        }
+
+        // dont use mod but bitmask. this avoids issues with overflows of the counter
+        buffer->solutions[buffer->writepos & (BUFFER_SIZE - 1)] = solution;
+        buffer->writepos++;
+
+        if (sem_post(semaphores->mutex) == -1) error_exit("Semaphore post failed");
+
+        // increment the count of the number of items
+        if (sem_post(semaphores->used) == -1) error_exit("Semaphore post failed");
     }
 
-    printf("Vertex count: %d\n", (int) graph->vertc);
-
-    printf("Edges:\n");
-
-    for (int i = 0; i < graph->edgec; i++) {
-        edge_t edge = graph->edges[i];
-        printf("%d-%d\n", edge.u, edge.v);
-    }
-
-    printf("Edge count: %d\n", (int) graph->edgec);
-
-    solution_t solution;
-
-    while (generate_solution(graph, &solution) < 0);
-
-    printf("Solution:\n");
-
-    for (int i = 0; i < solution.size; i++) {
-        edge_t edge = solution.edges[i];
-        printf("%d-%d\n", edge.u, edge.v);
-    }
-
-    printf("Solution count: %d\n", (int) solution.size);
+    printf("Generator is shutting down.\n");
 
     free_graph(graph);
+
+    return EXIT_SUCCESS;
 }
+
+/*static void buffer_write(solution_t *solution) {
+    // wait if there is no space left
+    sem_wait(semaphores->free);
+
+    // request synced write access
+    sem_wait(semaphores->mutex);
+    // dont use mod but bitmask. this avoids issues with overflows of the counter
+    buffer->solutions[buffer->writepos & (BUFFER_SIZE - 1)] = *solution;
+    buffer->writepos++;
+    sem_post(semaphores->mutex);
+
+    // increment the count of the number of items
+    sem_post(semaphores->used);
+}*/
 
 static int generate_solution(graph_t *graph, solution_t *solution) {
     int *colors = NULL;
     int max = -1;
     int pos = 0;
 
-    memset(solution, 0, sizeof(solution));
+    memset(solution, 0, sizeof(solution_t));
 
     for (int i = 0; i < graph->vertc; i++) {
         int vertex = graph->vertices[i];
@@ -96,7 +127,7 @@ static int generate_solution(graph_t *graph, solution_t *solution) {
         colors[vertex] = rand() % 3; // 0, 1 or 2 are the 3 colors
     }
 
-    printf("Colors:\n");
+    /*printf("Colors:\n");
 
     for (int i = 0; i < graph->vertc; i++) {
         int vertex = graph->vertices[i];
@@ -104,14 +135,14 @@ static int generate_solution(graph_t *graph, solution_t *solution) {
         printf("v: %d, c: %d\n", vertex, color);
     }
 
-    printf("Colors done\n");
+    printf("Colors done\n");*/
 
     for (int i = 0; i < graph->edgec; i++) {
         // Only need solutions with less than 9 edges
         if (pos == SOLUTION_MAX_EDGES) return -1;
         edge_t edge = graph->edges[i];
-        // If edges are different, add to solution
-        if (colors[edge.u] != colors[edge.v]) {
+        // If vertices of solution have the same color, add to solution
+        if (colors[edge.u] == colors[edge.v]) {
             solution->edges[pos] = edge;
             pos++;
         }
@@ -198,6 +229,19 @@ static void free_graph(graph_t *graph) {
     free(graph->edges);
     free(graph->vertices);
     free(graph);
+}
+
+static void handle_signal(int signal) {
+    quit = 1;
+}
+
+static void create_signal_handler(void) {
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+
+    sa.sa_handler = handle_signal;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
 }
 
 static void clean_up(void) {
